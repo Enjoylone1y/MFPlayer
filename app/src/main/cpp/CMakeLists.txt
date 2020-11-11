@@ -14,11 +14,11 @@ set(lib_name native-player)
 set(JNI_LIBS_DIR ${CMAKE_SOURCE_DIR}/../jniLibs)
 
 
-include_directories(includes)
+include_directories(include)
 
 
 link_directories(
-        ${JNI_LIBS_DIR}/{ANDROID_ABI})
+        ${JNI_LIBS_DIR}/${ANDROID_ABI})
 
 
 file(GLOB src_files
@@ -31,24 +31,23 @@ file(GLOB src_files
 
 add_library( # Sets the name of the library.
         ${lib_name}
+
         SHARED
+
         ${src_files} )
 
-
-#libavformat
-add_library(avformat STATIC IMPORTED)
-
-set_target_properties(avformat
-        PROPERTIES
-        IMPORTED_LOCATION ${JNI_LIBS_DIR}/${ANDROID_ABI}/libavformat.a)
-
-
-#libavutil
-add_library(avutil STATIC IMPORTED)
-
-set_target_properties(avutil
-        PROPERTIES
-        IMPORTED_LOCATION ${JNI_LIBS_DIR}/${ANDROID_ABI}/libavutil.a)
+#add_library(avformat-lib STATIC IMPORTED)
+#
+#set_target_properties(avformat-lib
+#        PROPERTIES
+#        IMPORTED_LOCATION ${JNI_LIBS_DIR}/${ANDROID_ABI}/libavformat.a)
+#
+#
+#add_library(avutil-lib STATIC IMPORTED)
+#
+#set_target_properties(avutil-lib
+#        PROPERTIES
+#        IMPORTED_LOCATION ${JNI_LIBS_DIR}/${ANDROID_ABI}/libavutil.a)
 
 
 
@@ -58,10 +57,29 @@ set_target_properties(avutil
 # you want to add. CMake verifies that the library exists before
 # completing its build.
 
-find_library( # Sets the name of the path variable.
-              log-lib
-              log )
+#find_library(
+#        log-lib
+#        log )
+#
+#
+#find_library(
+#        android-lib
+#        android )
 
+
+set(third-party-libs
+        avformat
+        avcodec
+        avfilter
+        swresample
+        swscale
+        avutil)
+
+#z 库不加会报 找不到 uncompress / inflate / inflateEnd 等问题，导致编译不通过
+set(native-libs
+        android
+        log
+        z)
 
 # Specifies libraries CMake should link to your target library. You
 # can link multiple libraries, such as libraries you define in this
@@ -69,7 +87,5 @@ find_library( # Sets the name of the path variable.
 
 target_link_libraries( # Specifies the target library.
                         ${lib_name}
-
-                        ${log-lib}
-                        ${avutil}
-                        ${avformat})
+                        ${third-party-libs}
+                        ${native-libs})
