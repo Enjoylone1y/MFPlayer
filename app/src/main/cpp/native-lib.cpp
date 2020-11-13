@@ -1,6 +1,8 @@
 #include <jni.h>
 #include <string>
 
+#include "NativeWindowPlayer.h"
+
 extern "C" {
 #include <android/log.h>
 #include <libavformat/avformat.h>
@@ -17,13 +19,18 @@ extern "C" {
 #endif
 
 JNIEXPORT jstring JNICALL
-Java_com_ezreal_mfplayer_MainActivity_getMediaFileInfo(
+Java_com_ezreal_mfplayer_MFPlayer_getMediaFileInfo(
         JNIEnv *env,
         jobject /* this */,
         jstring file_path) {
 
     int ret = 0;
     AVFormatContext *fmt_ctx = NULL;
+    AVStream *stream = NULL;
+    AVCodec *codec = NULL;
+    AVCodecParameters *codecParser = NULL;
+
+    av_log_set_level(AV_LOG_INFO);
 
     const char *path = env->GetStringUTFChars(file_path, NULL);
     if (!path) {
@@ -31,16 +38,70 @@ Java_com_ezreal_mfplayer_MainActivity_getMediaFileInfo(
         return env->NewStringUTF("error");
     }
 
+    fmt_ctx = avformat_alloc_context();
+
     ret = avformat_open_input(&fmt_ctx, path, NULL, NULL);
     if (ret < 0) {
         LOGE("open input failed");
         return env->NewStringUTF("error");
     }
 
-    std::string hello = "Hello from C++";
-    return env->NewStringUTF(hello.c_str());
+    std::string output = "codecs:\n";
+
+    for(int i =0; i < fmt_ctx->nb_streams; i++){
+        stream = fmt_ctx->streams[i];
+        codecParser = stream->codecpar;
+        codec = avcodec_find_decoder(codecParser->codec_id);
+        if(codec){
+            LOGI("find codec name = %s\t%s\n",codec->name,codec->long_name);
+            output += codec->name;
+            output += "\n";
+        }
+    }
+
+    if(fmt_ctx){
+        avformat_close_input(&fmt_ctx);
+    }
+
+    return env->NewStringUTF(output.c_str());
+}
+
+
+JNIEXPORT jlong JNICALL
+Java_com_ezreal_mfplayer_MFPlayer_NativePlayerInit(JNIEnv *env, jobject thiz,
+                                                   jstring file_path, jobject surface) {
+
+    auto *player =  new NativeWindowPlayer();
+    bool success = player->init(env->GetStringUTFChars(file_path,NULL),env,surface);
+    if (success){
+        return reinterpret_cast<jlong>(player);
+    }
+    return -1;
+}
+
+
+JNIEXPORT void JNICALL
+Java_com_ezreal_mfplayer_MFPlayer_NativePlayerPlay(JNIEnv *env, jobject thiz,jlong player_handle) {
+    if (player_handle > 0){
+        auto *player = reinterpret_cast<NativeWindowPlayer*>(player_handle);
+        if(player){
+            player->play();
+        }
+    }
+}
+
+
+JNIEXPORT void JNICALL
+Java_com_ezreal_mfplayer_MFPlayer_NativePlayerDestroy(JNIEnv *env, jobject thiz,jlong player_handle){
+    if (player_handle > 0){
+        auto *player = reinterpret_cast<NativeWindowPlayer*>(player_handle);
+        if(player){
+            player->destroy();
+        }
+    }
 }
 
 #ifdef __cplusplus
 }
 #endif
+

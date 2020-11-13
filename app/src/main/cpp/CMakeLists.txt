@@ -14,7 +14,7 @@ set(lib_name native-player)
 set(JNI_LIBS_DIR ${CMAKE_SOURCE_DIR}/../jniLibs)
 
 
-include_directories(include)
+include_directories(include player)
 
 
 link_directories(
@@ -22,7 +22,8 @@ link_directories(
 
 
 file(GLOB src_files
-        ${CMAKE_SOURCE_DIR}/*.cpp)
+        ${CMAKE_SOURCE_DIR}/*.cpp
+        ${CMAKE_SOURCE_DIR}/player/*.cpp)
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.

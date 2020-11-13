@@ -2,31 +2,43 @@ package com.ezreal.mfplayer
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.widget.TextView
+import android.view.SurfaceHolder
+import android.view.SurfaceView
 import java.io.File
 
+
 class MainActivity : AppCompatActivity() {
+
+    private lateinit var surfaceView: SurfaceView
+
+    private var mfPlayer:MFPlayer? = null
+    private var playerInitSuccess = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Example of a call to a native method
+        surfaceView = findViewById(R.id.surface_view)
 
         val filePath =  getExternalFilesDir(null)?.absolutePath + File.separator + "cg.mp4"
 
-        findViewById<TextView>(R.id.sample_text).text = getMediaFileInfo(filePath)
-    }
+        surfaceView.holder.addCallback(object :SurfaceHolder.Callback{
 
-    /**
-     * A native method that is implemented by the 'native-lib' native library,
-     * which is packaged with this application.
-     */
-    external fun getMediaFileInfo(filePath:String): String
+            override fun surfaceCreated(holder: SurfaceHolder?) {
+                mfPlayer = MFPlayer()
+                playerInitSuccess = mfPlayer?.init(filePath,surfaceView.holder.surface)!!
+            }
 
-    companion object {
-        // Used to load the 'native-lib' library on application startup.
-        init {
-            System.loadLibrary("native-player")
-        }
+            override fun surfaceChanged(holder: SurfaceHolder?,
+                format: Int, width: Int, height: Int) {
+                if (playerInitSuccess){
+                    mfPlayer?.play()
+                }
+            }
+
+            override fun surfaceDestroyed(holder: SurfaceHolder?) {
+                mfPlayer?.destroy()
+            }
+        })
     }
 }
