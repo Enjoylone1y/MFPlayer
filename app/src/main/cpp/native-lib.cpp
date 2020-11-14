@@ -70,8 +70,7 @@ Java_com_ezreal_mfplayer_MFPlayer_getMediaFileInfo(
 JNIEXPORT jlong JNICALL
 Java_com_ezreal_mfplayer_MFPlayer_NativePlayerInit(JNIEnv *env, jobject thiz,
                                                    jstring file_path, jobject surface) {
-
-    auto *player =  new NativeWindowPlayer();
+    NativeWindowPlayer *player =  new NativeWindowPlayer();
     bool success = player->init(env->GetStringUTFChars(file_path,NULL),env,surface);
     if (success){
         return reinterpret_cast<jlong>(player);
@@ -83,7 +82,7 @@ Java_com_ezreal_mfplayer_MFPlayer_NativePlayerInit(JNIEnv *env, jobject thiz,
 JNIEXPORT void JNICALL
 Java_com_ezreal_mfplayer_MFPlayer_NativePlayerPlay(JNIEnv *env, jobject thiz,jlong player_handle) {
     if (player_handle > 0){
-        auto *player = reinterpret_cast<NativeWindowPlayer*>(player_handle);
+        NativeWindowPlayer *player = reinterpret_cast<NativeWindowPlayer*>(player_handle);
         if(player){
             player->play();
         }
@@ -94,7 +93,7 @@ Java_com_ezreal_mfplayer_MFPlayer_NativePlayerPlay(JNIEnv *env, jobject thiz,jlo
 JNIEXPORT void JNICALL
 Java_com_ezreal_mfplayer_MFPlayer_NativePlayerDestroy(JNIEnv *env, jobject thiz,jlong player_handle){
     if (player_handle > 0){
-        auto *player = reinterpret_cast<NativeWindowPlayer*>(player_handle);
+        NativeWindowPlayer *player = reinterpret_cast<NativeWindowPlayer*>(player_handle);
         if(player){
             player->destroy();
         }

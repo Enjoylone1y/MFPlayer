@@ -25,6 +25,12 @@ private:
     AVPacket *m_Packet;
     AVStream *m_Stream;
 
+    int m_StreamIndex;
+
+    int m_VideoWidth;
+    int m_VideoHeight;
+    AVPixelFormat m_PixFormat;
+
 public:
     bool init(const char *path,JNIEnv *env,jobject surface);
     void play();
