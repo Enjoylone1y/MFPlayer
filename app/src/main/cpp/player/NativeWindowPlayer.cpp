@@ -3,8 +3,6 @@
 //
 
 #include "NativeWindowPlayer.h"
-#include <libavutil/error.h>
-#include <android/native_window_jni.h>
 
 #define LOG_TAG "MFPlayer"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)

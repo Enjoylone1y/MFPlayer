@@ -8,9 +8,15 @@
 #include <string>
 #include <jni.h>
 #include <android/native_window.h>
+#include <android/native_window_jni.h>
+#include <android/log.h>
+
+extern "C" {
 #include <libavformat/avformat.h>
 #include <libavcodec/codec.h>
-#include <android/log.h>
+#include <libavutil/error.h>
+}
+
 
 class NativeWindowPlayer {
 
