@@ -15,31 +15,45 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavcodec/codec.h>
 #include <libavutil/error.h>
+#include <libavutil/imgutils.h>
+#include <libswscale/swscale.h>
 }
 
 
 class NativeWindowPlayer {
 
 private:
-    const char *m_filePath;
 
-    ANativeWindow *m_NativeWindow;
+    const char *m_filePath;
 
     AVFormatContext *m_FormatContext;
     AVCodecContext *m_CodecContext;
     AVCodec *m_Codec;
+    SwsContext *m_SwsContext;
     AVPacket *m_Packet;
-    AVStream *m_Stream;
 
+    AVStream *m_Stream;
     int m_StreamIndex;
 
+    AVFrame *m_VideoFrame;
     int m_VideoWidth;
     int m_VideoHeight;
-    AVPixelFormat m_PixFormat;
+    AVPixelFormat m_VideoPixFmt;
+
+
+    ANativeWindow *m_NativeWindow;
+    ANativeWindow_Buffer m_WindowBuffer;
+
+    AVFrame *m_RenderFrame;
+    int m_RenderWidth;
+    int m_RenderHeight;
+    const AVPixelFormat RENDER_FORMAT = AV_PIX_FMT_RGBA;
+
+    int decoderFrameAndPlay();
 
 public:
     bool init(const char *path,JNIEnv *env,jobject surface);
-    void play();
+    void play(uint width,uint height);
     void destroy();
 };
 

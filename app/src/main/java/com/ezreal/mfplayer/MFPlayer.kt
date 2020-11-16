@@ -12,8 +12,8 @@ class MFPlayer {
         return playerHandle > 0
     }
 
-    fun play() {
-        NativePlayerPlay(playerHandle)
+    fun play(width:Int,height: Int) {
+        NativePlayerPlay(playerHandle, width, height)
     }
 
     fun destroy() {
@@ -23,7 +23,7 @@ class MFPlayer {
     external fun getMediaFileInfo(filePath:String): String
 
     external fun NativePlayerInit(filePath: String, surface: Surface): Long
-    external fun NativePlayerPlay(playerHandle:Long)
+    external fun NativePlayerPlay(playerHandle:Long,width:Int,height:Int)
     external fun NativePlayerDestroy(playerHandle:Long)
 
     companion object {

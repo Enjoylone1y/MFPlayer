@@ -80,11 +80,11 @@ Java_com_ezreal_mfplayer_MFPlayer_NativePlayerInit(JNIEnv *env, jobject thiz,
 
 
 JNIEXPORT void JNICALL
-Java_com_ezreal_mfplayer_MFPlayer_NativePlayerPlay(JNIEnv *env, jobject thiz,jlong player_handle) {
+Java_com_ezreal_mfplayer_MFPlayer_NativePlayerPlay(JNIEnv *env, jobject thiz,jlong player_handle,jint width,jint height) {
     if (player_handle > 0){
         NativeWindowPlayer *player = reinterpret_cast<NativeWindowPlayer*>(player_handle);
         if(player){
-            player->play();
+            player->play(width,height);
         }
     }
 }
