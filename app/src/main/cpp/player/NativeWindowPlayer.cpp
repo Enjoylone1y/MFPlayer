@@ -90,12 +90,18 @@ bool NativeWindowPlayer::init(const char *path,JNIEnv *env,jobject surface) {
     m_RenderWidth = windowWidth;
     m_RenderHeight = windowHeight;
 
-    ANativeWindow_setBuffersGeometry(m_NativeWindow,m_RenderWidth,m_RenderHeight,WINDOW_FORMAT_RGBA_8888);
+    int result =  ANativeWindow_setBuffersGeometry(m_NativeWindow,m_RenderWidth,m_RenderHeight,
+            WINDOW_FORMAT_RGBA_8888);
+    if (result < 0){
+        logError(-1,"Failed to set window geometry");
+        this->destroy();
+        return false;
+    }
 
     // 初始化渲染帧
     m_RenderFrame = av_frame_alloc();
 
-    // 计算帧大小
+    // 计算渲染帧大小
     int bufferSize = av_image_get_buffer_size(RENDER_FORMAT, m_RenderWidth, m_RenderHeight, 1);
     // 分配内存
     uint8_t *buffer = (uint8_t*) av_malloc(bufferSize * sizeof(uint8_t));
@@ -122,8 +128,11 @@ void NativeWindowPlayer::play(uint width,uint height) {
     m_Packet = av_packet_alloc();
     m_VideoFrame = av_frame_alloc();
 
+    ANativeWindow_acquire(m_NativeWindow);
+
     while (av_read_frame(m_FormatContext,m_Packet) == 0){
         if (m_Packet->stream_index == m_StreamIndex){
+            LOGI("---- Got a video stream packet ----");
             this->decoderFrameAndPlay();
         }
         av_packet_unref(m_Packet);
@@ -134,6 +143,9 @@ void NativeWindowPlayer::play(uint width,uint height) {
 
 
 int NativeWindowPlayer::decoderFrameAndPlay() {
+
+    LOGI("---- decoder a packet ----");
+
     int ret = 0;
 
     ret = avcodec_send_packet(m_CodecContext,m_Packet);
@@ -154,14 +166,18 @@ int NativeWindowPlayer::decoderFrameAndPlay() {
         }
 
         // 锁定缓冲区，拷贝数据
-        ANativeWindow_lock(m_NativeWindow,&m_WindowBuffer,NULL);
+        int result = ANativeWindow_lock(m_NativeWindow,&m_WindowBuffer,NULL);
+        if (result < 0){
+            logError(-1,"Failed to lock window");
+            return result;
+        }
 
         // 对每个frame做转换
         sws_scale(m_SwsContext, m_VideoFrame->data, m_VideoFrame->linesize,
                   0, m_VideoHeight, m_RenderFrame->data, m_RenderFrame->linesize);
 
         //获取window buffer
-        uint8_t *windowBuffer = static_cast<uint8_t *>(m_WindowBuffer.bits);
+        uint8_t *dstBuffer = (uint8_t *)m_WindowBuffer.bits;
 
         // 获取输入数据的步长
         int srcLineSize = m_RenderFrame->linesize[0];
@@ -170,7 +186,7 @@ int NativeWindowPlayer::decoderFrameAndPlay() {
 
         // 逐行拷贝数据
         for (int i = 0; i < m_RenderHeight; ++i) {
-            memcpy(windowBuffer + i * destLineSize,m_RenderFrame + i * srcLineSize,srcLineSize);
+            memcpy(dstBuffer + i * destLineSize,m_RenderFrame + i * srcLineSize,srcLineSize);
         }
 
         // 释放缓冲区，刷新页面
