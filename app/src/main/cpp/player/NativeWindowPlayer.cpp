@@ -16,20 +16,20 @@ bool NativeWindowPlayer::init(const char *path,JNIEnv *env,jobject surface) {
 
     // 打开媒体文件，找到视频流
     m_FormatContext = avformat_alloc_context();
-    ret = avformat_open_input(&m_FormatContext,path,NULL,NULL);
+    ret = avformat_open_input(&m_FormatContext,path,nullptr,nullptr);
     if (ret < 0){
         logError(ret,"Failed to open input");
         return false;
     }
 
-    if ((ret = avformat_find_stream_info(m_FormatContext,NULL))< 0){
+    if ((ret = avformat_find_stream_info(m_FormatContext,nullptr))< 0){
         logError(ret,"File do not contain any stream");
         this->destroy();
         return false;
     }
 
     ret = m_StreamIndex = av_find_best_stream(m_FormatContext,AVMEDIA_TYPE_VIDEO,
-            -1,-1,NULL,0);
+            -1,-1,nullptr,0);
     if(ret < 0 ){
         logError(ret,"Failed to find any VIDEO stream");
         this->destroy();
@@ -64,7 +64,7 @@ bool NativeWindowPlayer::init(const char *path,JNIEnv *env,jobject surface) {
         return false;
     }
 
-    ret = avcodec_open2(m_CodecContext,m_Codec,NULL);
+    ret = avcodec_open2(m_CodecContext,m_Codec,nullptr);
     if (ret < 0){
         logError(ret,"Failed to open codec");
         this->destroy();
@@ -87,8 +87,8 @@ bool NativeWindowPlayer::init(const char *path,JNIEnv *env,jobject surface) {
     int windowWidth = ANativeWindow_getWidth(m_NativeWindow);
     int windowHeight = ANativeWindow_getHeight(m_NativeWindow);
 
-    m_RenderWidth = windowWidth;
-    m_RenderHeight = windowHeight;
+    m_RenderWidth = m_VideoWidth;
+    m_RenderHeight = m_VideoHeight;
 
     int result =  ANativeWindow_setBuffersGeometry(m_NativeWindow,m_RenderWidth,m_RenderHeight,
             WINDOW_FORMAT_RGBA_8888);
@@ -98,19 +98,33 @@ bool NativeWindowPlayer::init(const char *path,JNIEnv *env,jobject surface) {
         return false;
     }
 
-    // 初始化渲染帧
+    m_Packet = av_packet_alloc();
+
+    // 视频帧
+    m_VideoFrame = av_frame_alloc();
+
+    // 渲染帧
     m_RenderFrame = av_frame_alloc();
+
+    if (m_VideoFrame == nullptr || m_RenderFrame == nullptr){
+        logError(-1,"Failed to alloc frame");
+        this->destroy();
+        return false;
+    }
 
     // 计算渲染帧大小
     int bufferSize = av_image_get_buffer_size(RENDER_FORMAT, m_RenderWidth, m_RenderHeight, 1);
+
+    LOGI("render width:%d,height:%d,bufferSize:%d",m_RenderWidth,m_RenderHeight,bufferSize);
+
     // 分配内存
-    uint8_t *buffer = (uint8_t*) av_malloc(bufferSize * sizeof(uint8_t));
+    auto buffer = (uint8_t*) av_malloc(bufferSize * sizeof(uint8_t));
     // 设定指针位置
     av_image_fill_arrays(m_RenderFrame->data, m_RenderFrame->linesize, buffer, RENDER_FORMAT, m_RenderWidth, m_RenderHeight, 1);
 
     // 初始化转换器上下文，用于将原始视频帧转为渲染用的帧（大小和像素格式）
     m_SwsContext = sws_getContext(m_VideoWidth, m_VideoHeight, m_VideoPixFmt, m_RenderWidth, m_RenderHeight, RENDER_FORMAT, SWS_FAST_BILINEAR,
-                                  NULL, NULL, NULL);
+                                  nullptr, nullptr, nullptr);
     if(!m_SwsContext){
         logError(-1,"Failed allow sws context");
         this->destroy();
@@ -125,8 +139,7 @@ void NativeWindowPlayer::play(uint width,uint height) {
 
     // 开始解码
     int ret = 0;
-    m_Packet = av_packet_alloc();
-    m_VideoFrame = av_frame_alloc();
+
 
     ANativeWindow_acquire(m_NativeWindow);
 
@@ -165,8 +178,12 @@ int NativeWindowPlayer::decoderFrameAndPlay() {
             return ret;
         }
 
+        LOGI("receive videoFrame width:%d,height:%d  lineSize:[%d,%d,%d]",
+                m_VideoFrame->width,m_VideoFrame->height, m_VideoFrame->linesize[0],
+                m_VideoFrame->linesize[1], m_VideoFrame->linesize[2]);
+
         // 锁定缓冲区，拷贝数据
-        int result = ANativeWindow_lock(m_NativeWindow,&m_WindowBuffer,NULL);
+        int result = ANativeWindow_lock(m_NativeWindow,&m_WindowBuffer, nullptr);
         if (result < 0){
             logError(-1,"Failed to lock window");
             return result;
@@ -176,8 +193,12 @@ int NativeWindowPlayer::decoderFrameAndPlay() {
         sws_scale(m_SwsContext, m_VideoFrame->data, m_VideoFrame->linesize,
                   0, m_VideoHeight, m_RenderFrame->data, m_RenderFrame->linesize);
 
+        LOGI("AfterSws RenderFrame  width:%d,height:%d lineSize:[%d,%d,%d]",
+                m_RenderFrame->width,m_RenderFrame->height, m_RenderFrame->linesize[0],
+                m_RenderFrame->linesize[1], m_RenderFrame->linesize[2]);
+
         //获取window buffer
-        uint8_t *dstBuffer = (uint8_t *)m_WindowBuffer.bits;
+        auto dstBuffer = (uint8_t *)m_WindowBuffer.bits;
 
         // 获取输入数据的步长
         int srcLineSize = m_RenderFrame->linesize[0];

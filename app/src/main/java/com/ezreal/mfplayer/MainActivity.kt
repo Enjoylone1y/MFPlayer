@@ -1,7 +1,11 @@
 package com.ezreal.mfplayer
 
+import android.content.ContentResolver
+import android.content.ContentUris
+import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Log
 import android.view.SurfaceHolder
 import android.view.SurfaceView
@@ -20,6 +24,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
 
         surfaceView = findViewById(R.id.surface_view)
 
