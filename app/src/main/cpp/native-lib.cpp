@@ -2,6 +2,7 @@
 #include <string>
 
 #include "NativeWindowPlayer.h"
+#include "AudioPlayer.h"
 
 extern "C" {
 #include <android/log.h>

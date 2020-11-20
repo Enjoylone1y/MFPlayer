@@ -14,7 +14,7 @@ set(lib_name native-player)
 set(JNI_LIBS_DIR ${CMAKE_SOURCE_DIR}/../jniLibs)
 
 
-include_directories(include player)
+include_directories(include player audio)
 
 
 link_directories(
@@ -23,7 +23,8 @@ link_directories(
 
 file(GLOB src_files
         ${CMAKE_SOURCE_DIR}/*.cpp
-        ${CMAKE_SOURCE_DIR}/player/*.cpp)
+        ${CMAKE_SOURCE_DIR}/player/*.cpp
+        ${CMAKE_SOURCE_DIR}/audio/*.cpp)
 
 
 add_library( # Sets the name of the library.
@@ -47,7 +48,8 @@ set(third-party-libs
 set(native-libs
         android
         log
-        z)
+        z
+        OpenSLES)
 
 
 target_link_libraries( # Specifies the target library.

@@ -16,6 +16,8 @@ bool NativeWindowPlayer::init(const char *path,JNIEnv *env,jobject surface) {
 
     // 打开媒体文件，找到视频流
     m_FormatContext = avformat_alloc_context();
+
+
     ret = avformat_open_input(&m_FormatContext,path,nullptr,nullptr);
     if (ret < 0){
         logError(ret,"Failed to open input");
@@ -39,6 +41,9 @@ bool NativeWindowPlayer::init(const char *path,JNIEnv *env,jobject surface) {
     LOGI("---- Find video stream index:%d ----",m_StreamIndex);
 
     m_Stream = m_FormatContext->streams[m_StreamIndex];
+
+
+
 
     // 初始化解码器
     m_Codec = avcodec_find_decoder(m_Stream->codecpar->codec_id);
@@ -64,12 +69,14 @@ bool NativeWindowPlayer::init(const char *path,JNIEnv *env,jobject surface) {
         return false;
     }
 
+
     ret = avcodec_open2(m_CodecContext,m_Codec,nullptr);
     if (ret < 0){
         logError(ret,"Failed to open codec");
         this->destroy();
         return false;
     }
+
 
     m_VideoWidth = m_CodecContext->width;
     m_VideoHeight = m_CodecContext->height;

@@ -17,6 +17,7 @@ extern "C" {
 #include <libavutil/error.h>
 #include <libavutil/imgutils.h>
 #include <libswscale/swscale.h>
+#include <libswresample/swresample.h>
 }
 
 
