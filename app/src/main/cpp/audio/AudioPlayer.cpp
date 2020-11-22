@@ -5,6 +5,14 @@
 #include "AudioPlayer.h"
 #include <cassert>
 
+
+
+void audioPlayerCallback(SLAndroidSimpleBufferQueueItf outBuffer,void *context){
+
+
+}
+
+
 int AudioPlayer::init() {
     SLresult result;
 
@@ -64,10 +72,27 @@ int AudioPlayer::init() {
     const SLInterfaceID ids[3] = {SL_IID_BUFFERQUEUE, SL_IID_EFFECTSEND, SL_IID_VOLUME };
     const SLboolean req[3] = {SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE};
 
+    // create player
+    result = (*audioEngine)->CreateAudioPlayer(audioEngine,&playerObj,&dataSource,&dataSink,3,ids,req);
+    assert(SL_RESULT_SUCCESS == result);
+    (void)result;
 
+    // realize
+    result = (*playerObj)->Realize(playerObj,SL_BOOLEAN_FALSE);
+    assert(SL_RESULT_SUCCESS == result);
+    (void)result;
 
-    if (SL_RESULT_SUCCESS == result){
-        // set
-    }
+    // get interface
+    result = (*playerObj)->GetInterface(playerObj,SL_IID_PLAY,&audioPlayer);
+    assert(SL_RESULT_SUCCESS == result);
+    (void)result;
+
+    // get the buffer queue interface
+    result = (*playerObj)->GetInterface(playerObj, SL_IID_BUFFERQUEUE, &audioPlayerBuffQueue);
+    assert(SL_RESULT_SUCCESS == result);
+    (void)result;
+
+    (*audioPlayerBuffQueue)->RegisterCallback(audioPlayerBuffQueue,audioPlayerCallback, this);
+
     return 0;
 }

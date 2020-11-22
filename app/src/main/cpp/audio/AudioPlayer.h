@@ -17,8 +17,10 @@ private:
     SLObjectItf outputMixObj = NULL;
     SLEnvironmentalReverbItf envReverb = NULL;
 
-
+    SLObjectItf playerObj = NULL;
     SLPlayItf audioPlayer = NULL;
+
+    SLAndroidSimpleBufferQueueItf  audioPlayerBuffQueue;
 
 public:
     int init();
