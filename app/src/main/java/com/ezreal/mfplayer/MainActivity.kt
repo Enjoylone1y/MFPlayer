@@ -9,6 +9,7 @@ import android.provider.MediaStore
 import android.util.Log
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import android.widget.Button
 import java.io.File
 
 
@@ -17,39 +18,52 @@ class MainActivity : AppCompatActivity() {
     private val TAG = "MFPlayer"
 
     private lateinit var surfaceView: SurfaceView
+    private lateinit var btnVideo: Button
+    private lateinit var btnAudio:Button
 
-    private var mfPlayer:MFPlayer? = null
+    private lateinit var mfPlayer:MFPlayer
+
     private var playerInitSuccess = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-
         surfaceView = findViewById(R.id.surface_view)
+        btnVideo = findViewById(R.id.btn_video)
+        btnAudio = findViewById(R.id.btn_audio)
 
         val filePath =  getExternalFilesDir(null)?.absolutePath + File.separator + "cg.mp4"
 
-        surfaceView.holder.addCallback(object :SurfaceHolder.Callback{
+        mfPlayer = MFPlayer()
 
-            override fun surfaceCreated(holder: SurfaceHolder?) {
-                Log.i(TAG,"---- surfaceCreated ----")
-                mfPlayer = MFPlayer()
-                playerInitSuccess = mfPlayer?.init(filePath,surfaceView.holder.surface)!!
-            }
+        btnVideo.setOnClickListener {
 
-            override fun surfaceChanged(holder: SurfaceHolder?,
-                format: Int, width: Int, height: Int) {
-                Log.i(TAG,"---- surfaceChanged ----")
-                if (playerInitSuccess){
-                    mfPlayer?.play(width, height)
+            surfaceView.holder.addCallback(object :SurfaceHolder.Callback{
+
+                override fun surfaceCreated(holder: SurfaceHolder?) {
+                    Log.i(TAG,"---- surfaceCreated ----")
+                    playerInitSuccess = mfPlayer.init(filePath,surfaceView.holder.surface)
                 }
-            }
 
-            override fun surfaceDestroyed(holder: SurfaceHolder?) {
-                Log.i(TAG,"---- surfaceDestroyed ----")
-                mfPlayer?.destroy()
-            }
-        })
+                override fun surfaceChanged(holder: SurfaceHolder?,
+                                            format: Int, width: Int, height: Int) {
+                    Log.i(TAG,"---- surfaceChanged ----")
+                    if (playerInitSuccess){
+                        mfPlayer.play(width, height)
+                    }
+                }
+
+                override fun surfaceDestroyed(holder: SurfaceHolder?) {
+                    Log.i(TAG,"---- surfaceDestroyed ----")
+                    mfPlayer.destroy()
+                }
+            })
+        }
+
+        btnAudio.setOnClickListener {
+            mfPlayer.playAudio(assets,"cg.aac")
+        }
+
     }
 }

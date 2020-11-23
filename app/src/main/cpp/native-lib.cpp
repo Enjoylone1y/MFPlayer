@@ -1,8 +1,11 @@
 #include <jni.h>
 #include <string>
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
 
 #include "NativeWindowPlayer.h"
 #include "AudioPlayer.h"
+
 
 extern "C" {
 #include <android/log.h>
@@ -105,3 +108,25 @@ Java_com_ezreal_mfplayer_MFPlayer_NativePlayerDestroy(JNIEnv *env, jobject thiz,
 }
 #endif
 
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_ezreal_mfplayer_MFPlayer_NativePlayMine(JNIEnv *env, jobject thiz,jobject assets, jstring fileName) {
+    const  char *file = env->GetStringUTFChars(fileName,NULL);
+    AAssetManager * assetManager = AAssetManager_fromJava(env,assets);
+    AAsset * asset = AAssetManager_open(assetManager,file,AASSET_MODE_UNKNOWN);
+    env->ReleaseStringUTFChars(fileName,file);
+    AudioPlayer *audioPlayer = new AudioPlayer();
+    audioPlayer->playAssetsMine(asset);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_ezreal_mfplayer_MFPlayer_NativePlayPcm(JNIEnv *env, jobject thiz, jobject asset_manager,
+                                                jstring file_path) {
+    const  char *filePath = env->GetStringUTFChars(file_path,NULL);
+    AAssetManager * assetManager = AAssetManager_fromJava(env,asset_manager);
+    AAsset * asset = AAssetManager_open(assetManager,filePath,AASSET_MODE_UNKNOWN);
+    env->ReleaseStringUTFChars(file_path,filePath);
+    AudioPlayer *audioPlayer = new AudioPlayer();
+    audioPlayer->playPcm(asset);
+}

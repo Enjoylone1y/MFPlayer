@@ -8,8 +8,17 @@
 #include <jni.h>
 #include <SLES/OpenSLES.h>
 #include <SLES/OpenSLES_Android.h>
+#include <android/asset_manager.h>
+#include <stdio.h>
+
+enum AudioSourceType {
+        MINE,
+        PCM
+};
+
 
 class AudioPlayer {
+
 private:
     SLObjectItf engineObj = NULL;
     SLEngineItf audioEngine = NULL;
@@ -19,11 +28,26 @@ private:
 
     SLObjectItf playerObj = NULL;
     SLPlayItf audioPlayer = NULL;
+    SLVolumeItf playerVolume = NULL;
 
     SLAndroidSimpleBufferQueueItf  audioPlayerBuffQueue;
 
+    AAsset *m_Asset;
+    void *buffer;
+    int bufferSize;
+
 public:
-    int init();
+    void playAssetsMine(AAsset *asset);
+    void playPcm(AAsset *pAsset);
+    void getPcmBuffer();
+
+private:
+    int initEngine();
+    int createPlayerWidthType(AudioSourceType type,AAsset *asset);
+    void startPlay();
+    void stopPlay();
+    void handlerBufferCallback();
+    static void audioBufferCallback(SLAndroidSimpleBufferQueueItf bufferQueue, void *context);
 };
 
 
