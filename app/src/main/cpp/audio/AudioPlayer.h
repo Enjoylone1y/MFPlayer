@@ -20,6 +20,8 @@ enum AudioSourceType {
 class AudioPlayer {
 
 private:
+    SLresult result;
+
     SLObjectItf engineObj = NULL;
     SLEngineItf audioEngine = NULL;
 
@@ -32,22 +34,22 @@ private:
 
     SLAndroidSimpleBufferQueueItf  audioPlayerBuffQueue;
 
-    AAsset *m_Asset;
+    const size_t BUFFER_SIZE = 44100 * 2 * 2;
+    FILE *fileFd;
+    uint8_t *outBuffer;
     void *buffer;
-    int bufferSize;
+    size_t readSize;
+
 
 public:
     void playAssetsMine(AAsset *asset);
-    void playPcm(AAsset *pAsset);
-    void getPcmBuffer();
+    void playPcm(const char * filePath);
+    void handlerBufferCallback();
 
 private:
     int initEngine();
-    int createPlayerWidthType(AudioSourceType type,AAsset *asset);
-    void startPlay();
-    void stopPlay();
-    void handlerBufferCallback();
-    static void audioBufferCallback(SLAndroidSimpleBufferQueueItf bufferQueue, void *context);
+    int playerWidthType(AudioSourceType type,AAsset *asset,const char * filePath = "");
+    void release();
 };
 
 

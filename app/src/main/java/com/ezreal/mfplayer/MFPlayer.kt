@@ -22,8 +22,12 @@ class MFPlayer {
     }
 
 
-    fun playAudio(assetManager: AssetManager,filePath: String) {
+    fun playMine(assetManager: AssetManager,filePath: String) {
         NativePlayMine(assetManager, filePath)
+    }
+
+    fun playPcmFile(filePath: String){
+        NativePlayPcm(filePath)
     }
 
     external fun getMediaFileInfo(filePath:String): String
@@ -33,7 +37,7 @@ class MFPlayer {
     external fun NativePlayerDestroy(playerHandle:Long)
 
     external fun NativePlayMine(assetManager: AssetManager, filePath: String)
-    external fun NativePlayPcm(assetManager: AssetManager, filePath: String)
+    external fun NativePlayPcm(filePath: String)
 
     companion object {
         // Used to load the 'native-lib' library on application startup.

@@ -108,6 +108,7 @@ Java_com_ezreal_mfplayer_MFPlayer_NativePlayerDestroy(JNIEnv *env, jobject thiz,
 }
 #endif
 
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_ezreal_mfplayer_MFPlayer_NativePlayMine(JNIEnv *env, jobject thiz,jobject assets, jstring fileName) {
@@ -119,14 +120,12 @@ Java_com_ezreal_mfplayer_MFPlayer_NativePlayMine(JNIEnv *env, jobject thiz,jobje
     audioPlayer->playAssetsMine(asset);
 }
 
+
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_ezreal_mfplayer_MFPlayer_NativePlayPcm(JNIEnv *env, jobject thiz, jobject asset_manager,
-                                                jstring file_path) {
+Java_com_ezreal_mfplayer_MFPlayer_NativePlayPcm(JNIEnv *env, jobject thiz,jstring file_path) {
     const  char *filePath = env->GetStringUTFChars(file_path,NULL);
-    AAssetManager * assetManager = AAssetManager_fromJava(env,asset_manager);
-    AAsset * asset = AAssetManager_open(assetManager,filePath,AASSET_MODE_UNKNOWN);
-    env->ReleaseStringUTFChars(file_path,filePath);
+    LOGI("---- filePath: %s ----",filePath);
     AudioPlayer *audioPlayer = new AudioPlayer();
-    audioPlayer->playPcm(asset);
+    audioPlayer->playPcm(filePath);
 }
