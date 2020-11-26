@@ -54,7 +54,7 @@ private:
 
 public:
     bool init(const char *path,JNIEnv *env,jobject surface);
-    void play(uint width,uint height);
+    void play();
     void destroy();
 };
 

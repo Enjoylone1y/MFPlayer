@@ -43,8 +43,6 @@ bool NativeWindowPlayer::init(const char *path,JNIEnv *env,jobject surface) {
     m_Stream = m_FormatContext->streams[m_StreamIndex];
 
 
-
-
     // 初始化解码器
     m_Codec = avcodec_find_decoder(m_Stream->codecpar->codec_id);
     if (!m_Codec){
@@ -140,16 +138,9 @@ bool NativeWindowPlayer::init(const char *path,JNIEnv *env,jobject surface) {
     return true;
 }
 
-void NativeWindowPlayer::play(uint width,uint height) {
+void NativeWindowPlayer::play() {
 
-    LOGI("---- start to play video width:%d,height:%d ----",width,height);
-
-    // 开始解码
-    int ret = 0;
-
-
-    ANativeWindow_acquire(m_NativeWindow);
-
+    LOGI("---- start to play video ----");
     while (av_read_frame(m_FormatContext,m_Packet) == 0){
         if (m_Packet->stream_index == m_StreamIndex){
             LOGI("---- Got a video stream packet ----");
@@ -205,16 +196,16 @@ int NativeWindowPlayer::decoderFrameAndPlay() {
                 m_RenderFrame->linesize[1], m_RenderFrame->linesize[2]);
 
         //获取window buffer
-        auto dstBuffer = (uint8_t *)m_WindowBuffer.bits;
+        auto windowBuffer = (uint8_t *)m_WindowBuffer.bits;
 
         // 获取输入数据的步长
-        int srcLineSize = m_RenderFrame->linesize[0];
+        int renderLineSize = m_RenderFrame->linesize[0];
         // window 缓冲区步长
-        int destLineSize = m_WindowBuffer.stride * 4;
+        int bufferLineSize = m_WindowBuffer.stride * 4;
 
         // 逐行拷贝数据
         for (int i = 0; i < m_RenderHeight; ++i) {
-            memcpy(dstBuffer + i * destLineSize,m_RenderFrame + i * srcLineSize,srcLineSize);
+            memcpy(windowBuffer + i * bufferLineSize, m_RenderFrame + i * renderLineSize, renderLineSize);
         }
 
         // 释放缓冲区，刷新页面

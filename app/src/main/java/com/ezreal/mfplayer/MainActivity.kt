@@ -4,7 +4,6 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.SurfaceHolder
-import android.view.SurfaceView
 import android.widget.Button
 import java.io.File
 
@@ -13,7 +12,7 @@ class MainActivity : AppCompatActivity() {
 
     private val TAG = "MFPlayer"
 
-    private lateinit var surfaceView: SurfaceView
+    private lateinit var surfaceView: MySurfaceView
     private lateinit var btnVideo: Button
     private lateinit var btnMine:Button
     private lateinit var btnPcm:Button
@@ -33,29 +32,32 @@ class MainActivity : AppCompatActivity() {
 
         mfPlayer = MFPlayer()
 
-        btnVideo.setOnClickListener {
+        Log.i(TAG,"---- btnVideo onClick ----")
+        surfaceView.holder.addCallback(object :SurfaceHolder.Callback{
 
-            surfaceView.holder.addCallback(object :SurfaceHolder.Callback{
+            override fun surfaceCreated(holder: SurfaceHolder?) {
+                Log.i(TAG,"---- surfaceCreated ----")
+                val filePath =  getExternalFilesDir(null)?.absolutePath + File.separator + "cg.mp4"
+                playerInitSuccess = mfPlayer.init(filePath,surfaceView.holder.surface)
+            }
 
-                override fun surfaceCreated(holder: SurfaceHolder?) {
-                    Log.i(TAG,"---- surfaceCreated ----")
-                    val filePath =  getExternalFilesDir(null)?.absolutePath + File.separator + "cg.mp4"
-                    playerInitSuccess = mfPlayer.init(filePath,surfaceView.holder.surface)
-                }
+            override fun surfaceChanged(holder: SurfaceHolder?,
+                                        format: Int, width: Int, height: Int) {
+                Log.i(TAG,"---- surfaceChanged ----")
 
-                override fun surfaceChanged(holder: SurfaceHolder?,
-                                            format: Int, width: Int, height: Int) {
-                    Log.i(TAG,"---- surfaceChanged ----")
-                    if (playerInitSuccess){
-                        mfPlayer.play(width, height)
-                    }
-                }
+            }
 
-                override fun surfaceDestroyed(holder: SurfaceHolder?) {
-                    Log.i(TAG,"---- surfaceDestroyed ----")
+            override fun surfaceDestroyed(holder: SurfaceHolder?) {
+                Log.i(TAG,"---- surfaceDestroyed ----")
                     mfPlayer.destroy()
-                }
-            })
+            }
+        })
+
+
+        btnVideo.setOnClickListener {
+            if (playerInitSuccess){
+                mfPlayer.play()
+            }
         }
 
         btnMine.setOnClickListener {
