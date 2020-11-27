@@ -14,7 +14,7 @@ set(lib_name native-player)
 set(JNI_LIBS_DIR ${CMAKE_SOURCE_DIR}/../jniLibs)
 
 
-include_directories(include player audio)
+include_directories(include player audio decoder render)
 
 
 link_directories(
@@ -24,6 +24,8 @@ link_directories(
 file(GLOB src_files
         ${CMAKE_SOURCE_DIR}/*.cpp
         ${CMAKE_SOURCE_DIR}/player/*.cpp
+        ${CMAKE_SOURCE_DIR}/decoder/*.cpp
+        ${CMAKE_SOURCE_DIR}/render/*.cpp
         ${CMAKE_SOURCE_DIR}/audio/*.cpp)
 
 
