@@ -17,14 +17,13 @@ bool NativeWindowPlayer::init(const char *path,JNIEnv *env,jobject surface) {
     // 打开媒体文件，找到视频流
     m_FormatContext = avformat_alloc_context();
 
-
     ret = avformat_open_input(&m_FormatContext,path,nullptr,nullptr);
     if (ret < 0){
         logError(ret,"Failed to open input");
         return false;
     }
 
-    if ((ret = avformat_find_stream_info(m_FormatContext,nullptr))< 0){
+    if ((ret = avformat_find_stream_info(m_FormatContext,nullptr)) < 0){
         logError(ret,"File do not contain any stream");
         this->destroy();
         return false;
@@ -141,10 +140,13 @@ bool NativeWindowPlayer::init(const char *path,JNIEnv *env,jobject surface) {
 void NativeWindowPlayer::play() {
 
     LOGI("---- start to play video ----");
-    while (av_read_frame(m_FormatContext,m_Packet) == 0){
+    while (av_read_frame(m_FormatContext,m_Packet) >= 0){
         if (m_Packet->stream_index == m_StreamIndex){
             LOGI("---- Got a video stream packet ----");
-            this->decoderFrameAndPlay();
+            int decoderRet = this->decoderFrameAndPlay();
+            if (decoderRet != 0){
+                logError(decoderRet,"Failed in decoderFrameAndPlay");
+            }
         }
         av_packet_unref(m_Packet);
     }
@@ -154,17 +156,13 @@ void NativeWindowPlayer::play() {
 
 
 int NativeWindowPlayer::decoderFrameAndPlay() {
-
     LOGI("---- decoder a packet ----");
-
     int ret = 0;
-
     ret = avcodec_send_packet(m_CodecContext,m_Packet);
     if (ret != 0){
         logError(ret,"Error on decoding packet");
         return ret;
     }
-
 
     while (ret >= 0){
         ret = avcodec_receive_frame(m_CodecContext, m_VideoFrame);
@@ -180,6 +178,8 @@ int NativeWindowPlayer::decoderFrameAndPlay() {
                 m_VideoFrame->width,m_VideoFrame->height, m_VideoFrame->linesize[0],
                 m_VideoFrame->linesize[1], m_VideoFrame->linesize[2]);
 
+
+
         // 锁定缓冲区，拷贝数据
         int result = ANativeWindow_lock(m_NativeWindow,&m_WindowBuffer, nullptr);
         if (result < 0){
@@ -187,7 +187,7 @@ int NativeWindowPlayer::decoderFrameAndPlay() {
             return result;
         }
 
-        // 对每个frame做转换
+        // 转换到 native_window 可用的 renderFrame
         sws_scale(m_SwsContext, m_VideoFrame->data, m_VideoFrame->linesize,
                   0, m_VideoHeight, m_RenderFrame->data, m_RenderFrame->linesize);
 
@@ -204,8 +204,8 @@ int NativeWindowPlayer::decoderFrameAndPlay() {
         int bufferLineSize = m_WindowBuffer.stride * 4;
 
         // 逐行拷贝数据
-        for (int i = 0; i < m_RenderHeight; ++i) {
-            memcpy(windowBuffer + i * bufferLineSize, m_RenderFrame + i * renderLineSize, renderLineSize);
+        for (int k = 0; k < m_RenderHeight; ++k) {
+            memcpy(windowBuffer + k * bufferLineSize, m_RenderFrame->data[0] + k * renderLineSize, renderLineSize);
         }
 
         // 释放缓冲区，刷新页面

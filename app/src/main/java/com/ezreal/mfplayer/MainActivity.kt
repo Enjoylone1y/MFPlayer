@@ -37,7 +37,8 @@ class MainActivity : AppCompatActivity() {
 
             override fun surfaceCreated(holder: SurfaceHolder?) {
                 Log.i(TAG,"---- surfaceCreated ----")
-                val filePath =  getExternalFilesDir(null)?.absolutePath + File.separator + "cg.mp4"
+
+                val filePath =  filesDir?.absolutePath + File.separator + "cg.mp4"
                 playerInitSuccess = mfPlayer.init(filePath,surfaceView.holder.surface)
             }
 
