@@ -14,7 +14,7 @@ set(lib_name native-player)
 set(JNI_LIBS_DIR ${CMAKE_SOURCE_DIR}/../jniLibs)
 
 
-include_directories(include player decoder render utils)
+include_directories(include utils player decoder render )
 
 
 link_directories(
