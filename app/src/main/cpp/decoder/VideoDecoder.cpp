@@ -188,7 +188,6 @@ void VideoDecoder::parseFrame() {
 }
 
 
-
 void VideoDecoder::start() {
     if (!m_Thread) {
         pthread_create(&m_Thread, nullptr, threadFunc, this);

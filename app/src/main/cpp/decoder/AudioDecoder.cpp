@@ -141,13 +141,13 @@ int AudioDecoder::loopDecode() {
             while (ret >= 0) {
                 ret = avcodec_receive_frame(m_CodecContext, m_AudioFrame);
                 if (ret < 0) {
-                    if (ret != AVERROR_EOF && ret != AVERROR(EAGAIN)) {
-                        logError(ret, "Error on decoding");
-                    }
+                    logError(ret, "Error on decoding");
+                } else if(ret == AVERROR_EOF || ret == AVERROR(EAGAIN)) {
+                    
                 } else {
                     LOGI("receive audioFrame format:%d,channel:%ld,nbSimple:%d,simpleRate:%d",
                          m_AudioFrame->format,m_AudioFrame->channel_layout,m_AudioFrame->nb_samples
-                         ,m_AudioFrame->sample_rate);
+                    ,m_AudioFrame->sample_rate);
                     parseFrame();
                 }
             }
@@ -158,14 +158,17 @@ int AudioDecoder::loopDecode() {
     return ret;
 }
 
+
 void AudioDecoder::parseFrame() {
     int ret = swr_convert(m_SwrContext,&m_AudioOutBuffer,m_FrameDataSize / 2,
             (const uint8_t**) m_AudioFrame->data,m_AudioFrame->nb_samples);
-    if (ret > 0){
-        auto *renderData = new RenderData ();
-        renderData->nbSamples = m_nbSamples;
-        renderData->audioDataSize = m_FrameDataSize;
-        renderData->audioData = m_AudioOutBuffer;
-        m_RenderQueue->push(renderData);
+    if (ret < 0){
+        logError(ret,"swr_convert error");
+        return;
     }
+    auto *renderData = new RenderData ();
+    renderData->nbSamples = m_nbSamples;
+    renderData->audioDataSize = m_FrameDataSize;
+    renderData->audioData = m_AudioOutBuffer;
+    m_RenderQueue->push(renderData);
 }

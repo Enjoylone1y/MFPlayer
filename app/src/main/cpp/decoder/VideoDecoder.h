@@ -33,25 +33,27 @@ private:
 
 private:
     PlayerState m_State = PREPARING;
-    pthread_t m_Thread;
+    pthread_t m_Thread = 0;
 
     pthread_mutex_t m_Mutex;
 
-    queue<RenderData*> *m_RenderQueue;
+    queue<RenderData*> *m_RenderQueue = nullptr;
 
-    VideoRenderParams *m_RenderParams;
+    VideoRenderParams *m_RenderParams = nullptr;
 
-    AVFormatContext *m_FormatContext;
+    AVFormatContext *m_FormatContext = nullptr;
+
+    AVStream *m_Stream = nullptr;
+    AVCodec *m_Codec = nullptr;
+    AVCodecContext *m_CodecContext = nullptr;
+
+    AVPacket *m_Packet = nullptr;
+    AVFrame *m_VideoFrame = nullptr;
+    AVFrame *m_RenderFrame = nullptr;
+
+    SwsContext *m_SwsContext = nullptr;
+
     int m_StreamIndex;
-    AVStream *m_Stream;
-    AVCodec *m_Codec;
-    AVCodecContext *m_CodecContext;
-
-    AVPacket *m_Packet;
-    AVFrame *m_VideoFrame;
-    AVFrame *m_RenderFrame;
-
-    SwsContext *m_SwsContext;
 };
 
 

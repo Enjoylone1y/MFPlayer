@@ -73,8 +73,9 @@ bool AudioSLESRender::initRender(queue<RenderData *> *queue) {
 
     m_RenderParams = new AudioRenderParams ();
     m_RenderParams->simpleFormat = AV_SAMPLE_FMT_S16;
-    m_RenderParams->simpleRate = SL_SAMPLINGRATE_44_1;
+    m_RenderParams->simpleRate = 44100;
     m_RenderParams->nbSimple = 1024;
+    m_RenderParams->channelLayout = 2;
 
     // set outputMix
     SLDataLocator_OutputMix dataSinkLoc = {SL_DATALOCATOR_OUTPUTMIX,outputMixObj};
@@ -132,6 +133,7 @@ bool AudioSLESRender::stop() {
 
 void AudioSLESRender::playAudio(){
     while (true){
+        av_usleep(10);
         if (!m_RenderQueue->empty()) break;
     }
     auto *renderData = m_RenderQueue->front();
