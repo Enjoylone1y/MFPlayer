@@ -40,6 +40,9 @@ class MainActivity : AppCompatActivity() {
 
                 val filePath =  filesDir?.absolutePath + File.separator + "cg.mp4"
                 playerInitSuccess = mfPlayer.init(filePath,surfaceView.holder.surface)
+
+
+                Log.i(TAG,String.format("currentThread %s",Thread.currentThread().name))
             }
 
             override fun surfaceChanged(holder: SurfaceHolder?,

@@ -2,6 +2,10 @@
 // Created by patch on 2020/11/27.
 //
 
+extern "C" {
+#include <libavutil/time.h>
+}
+
 #include "VideoDecoder.h"
 #include "Utils.h"
 
@@ -55,13 +59,11 @@ bool VideoDecoder::initDecoder(AVFormatContext *fmt_ctx, VideoRenderParams *para
         return false;
     }
 
-
     ret = avcodec_open2(m_CodecContext, m_Codec, nullptr);
     if (ret < 0) {
         logError(ret, "Failed to open codec");
         return false;
     }
-
 
     m_Packet = av_packet_alloc();
 
@@ -124,6 +126,11 @@ void *VideoDecoder::threadFunc(void *decoderInst) {
 int VideoDecoder::loopDecode() {
     int ret = 0;
     do {
+        // 队列达到一定值先休眠10MS暂停解码
+        if (m_RenderQueue->size() > 100) {
+            av_usleep(10);
+            continue;
+        }
         ret = av_read_frame(m_FormatContext, m_Packet);
         if (m_Packet->stream_index == m_StreamIndex) {
             ret = avcodec_send_packet(m_CodecContext, m_Packet);

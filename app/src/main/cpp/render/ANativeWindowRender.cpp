@@ -62,8 +62,16 @@ VideoRenderParams* ANativeWindowRender::getRenderParams(){
 }
 
 
+void * ANativeWindowRender::threadFunc(void *renderInst) {
+    auto *render = static_cast<ANativeWindowRender*>(renderInst);
+    if (render){
+        render->renderLoop();
+    }
+    return nullptr;
+}
+
 bool ANativeWindowRender::start() {
-    renderLoop();
+    pthread_create(&m_Thread, nullptr, threadFunc, this);
     return true;
 }
 

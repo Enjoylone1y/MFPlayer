@@ -13,6 +13,7 @@
 
 #include "Base.h"
 #include <queue>
+#include <pthread.h>
 
 using namespace std;
 
@@ -23,15 +24,20 @@ public:
     ~ANativeWindowRender();
 
     bool initRender( JNIEnv *env, jobject surface,int videoWidth, int videoHeight, queue<RenderData*> *queue);
+    VideoRenderParams * getRenderParams();
+
     bool start();
     bool pause();
     bool stop();
 
+    static void *threadFunc(void* renderInst);
+
     void renderLoop();
 
-    VideoRenderParams * getRenderParams();
-
 private:
+
+    pthread_t m_Thread;
+
     PlayerState m_State;
     queue<RenderData*> *m_RenderQueue;
 

@@ -29,14 +29,14 @@ Java_com_ezreal_mfplayer_MFPlayer_getMediaFileInfo(
         jstring file_path) {
 
     int ret = 0;
-    AVFormatContext *fmt_ctx = NULL;
-    AVStream *stream = NULL;
-    AVCodec *codec = NULL;
-    AVCodecParameters *codecParser = NULL;
+    AVFormatContext *fmt_ctx = nullptr;
+    AVStream *stream = nullptr;
+    AVCodec *codec = nullptr;
+    AVCodecParameters *codecParser = nullptr;
 
     av_log_set_level(AV_LOG_INFO);
 
-    const char *path = env->GetStringUTFChars(file_path, NULL);
+    const char *path = env->GetStringUTFChars(file_path, nullptr);
     if (!path) {
         LOGE("file path is invalid");
         return env->NewStringUTF("error");
@@ -44,7 +44,7 @@ Java_com_ezreal_mfplayer_MFPlayer_getMediaFileInfo(
 
     fmt_ctx = avformat_alloc_context();
 
-    ret = avformat_open_input(&fmt_ctx, path, NULL, NULL);
+    ret = avformat_open_input(&fmt_ctx, path, nullptr, nullptr);
     if (ret < 0) {
         LOGE("open input failed");
         return env->NewStringUTF("error");
@@ -74,8 +74,8 @@ Java_com_ezreal_mfplayer_MFPlayer_getMediaFileInfo(
 JNIEXPORT jlong JNICALL
 Java_com_ezreal_mfplayer_MFPlayer_NativePlayerInit(JNIEnv *env, jobject thiz,
                                                    jstring file_path, jobject surface) {
-    MFPlayer *player =  new MFPlayer();
-    bool success = player->init(env->GetStringUTFChars(file_path,NULL),env,surface);
+    auto *player =  new MFPlayer();
+    bool success = player->init(env->GetStringUTFChars(file_path,nullptr),env,surface);
     if (success){
         return reinterpret_cast<jlong>(player);
     }
@@ -86,7 +86,7 @@ Java_com_ezreal_mfplayer_MFPlayer_NativePlayerInit(JNIEnv *env, jobject thiz,
 JNIEXPORT void JNICALL
 Java_com_ezreal_mfplayer_MFPlayer_NativePlayerPlay(JNIEnv *env, jobject thiz,jlong player_handle) {
     if (player_handle > 0){
-        MFPlayer *player = reinterpret_cast<MFPlayer*>(player_handle);
+        auto *player = reinterpret_cast<MFPlayer*>(player_handle);
         if(player){
             player->play();
         }
@@ -97,7 +97,7 @@ Java_com_ezreal_mfplayer_MFPlayer_NativePlayerPlay(JNIEnv *env, jobject thiz,jlo
 JNIEXPORT void JNICALL
 Java_com_ezreal_mfplayer_MFPlayer_NativePlayerDestroy(JNIEnv *env, jobject thiz,jlong player_handle){
     if (player_handle > 0){
-        MFPlayer *player = reinterpret_cast<MFPlayer*>(player_handle);
+        auto *player = reinterpret_cast<MFPlayer*>(player_handle);
         if(player){
             player->destroy();
         }
@@ -112,11 +112,11 @@ Java_com_ezreal_mfplayer_MFPlayer_NativePlayerDestroy(JNIEnv *env, jobject thiz,
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_ezreal_mfplayer_MFPlayer_NativePlayMine(JNIEnv *env, jobject thiz,jobject assets, jstring fileName) {
-    const  char *file = env->GetStringUTFChars(fileName,NULL);
+    const  char *file = env->GetStringUTFChars(fileName,nullptr);
     AAssetManager * assetManager = AAssetManager_fromJava(env,assets);
     AAsset * asset = AAssetManager_open(assetManager,file,AASSET_MODE_UNKNOWN);
     env->ReleaseStringUTFChars(fileName,file);
-    AudioPlayer *audioPlayer = new AudioPlayer();
+    auto *audioPlayer = new AudioPlayer();
     audioPlayer->playAssetsMine(asset);
 }
 
@@ -124,8 +124,8 @@ Java_com_ezreal_mfplayer_MFPlayer_NativePlayMine(JNIEnv *env, jobject thiz,jobje
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_ezreal_mfplayer_MFPlayer_NativePlayPcm(JNIEnv *env, jobject thiz,jstring file_path) {
-    const  char *filePath = env->GetStringUTFChars(file_path,NULL);
+    const  char *filePath = env->GetStringUTFChars(file_path,nullptr);
     LOGI("---- filePath: %s ----",filePath);
-    AudioPlayer *audioPlayer = new AudioPlayer();
+    auto *audioPlayer = new AudioPlayer();
     audioPlayer->playPcm(filePath);
 }
