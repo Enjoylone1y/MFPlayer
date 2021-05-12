@@ -13,6 +13,9 @@
 #include "Utils.h"
 #include "ANativeWindowRender.h"
 #include "VideoDecoder.h"
+#include "AudioDecoder.h"
+#include "AudioSLESRender.h"
+
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -26,13 +29,18 @@ private:
 
     AVFormatContext *m_FormatContext;
 
-    queue<RenderData*> *m_RenderQueue;
+    queue<RenderData*> *m_VideoQueue;
+    queue<RenderData*> *m_AudioQueue;
 
     int m_VideoSteamIndex;
     int m_AudioSteamIndex;
 
     VideoDecoder *videoDecoder;
-    ANativeWindowRender *render;
+    ANativeWindowRender *windowRender;
+
+    AudioDecoder *audioDecoder;
+    AudioSLESRender *audioRender;
+
 
 public:
     bool init(const char *path,JNIEnv *env,jobject surface);

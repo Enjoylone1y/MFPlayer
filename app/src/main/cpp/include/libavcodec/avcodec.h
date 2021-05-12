@@ -746,7 +746,7 @@ typedef struct AVCodecContext {
      * in order.
      * The function is also used by hardware acceleration APIs.
      * It is called at least once during frame decoding to pass
-     * the data needed for hardware render.
+     * the data needed for hardware windowRender.
      * In that mode instead of pixel data, AVFrame points to
      * a structure specific to the acceleration API. The application
      * reads the structure and can change some fields to indicate progress

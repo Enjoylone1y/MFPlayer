@@ -2,12 +2,9 @@
 // Created by patch on 2020/11/27.
 //
 
-extern "C" {
-#include <libavutil/time.h>
-}
 
 #include "VideoDecoder.h"
-#include "Utils.h"
+
 
 VideoDecoder::VideoDecoder() {
 
@@ -66,9 +63,9 @@ bool VideoDecoder::initDecoder(AVFormatContext *fmt_ctx, VideoRenderParams *para
     }
 
     m_Packet = av_packet_alloc();
-
-    // 视频帧
     m_VideoFrame = av_frame_alloc();
+
+    /*视频专属*/
 
     // 渲染帧
     m_RenderFrame = av_frame_alloc();
@@ -170,6 +167,7 @@ void VideoDecoder::parseFrame() {
             renderData->linesize[0] = m_RenderFrame->linesize[0];
 
             renderData->pts = m_VideoFrame->pts;
+            renderData->key_frame = m_VideoFrame->key_frame;
 
             renderData->format = m_RenderParams->renderFormat;
             renderData->width = m_RenderParams->width;
@@ -177,7 +175,12 @@ void VideoDecoder::parseFrame() {
 
             m_RenderQueue->push(renderData);
             break;
-        };
+        }
+
+        case AV_PIX_FMT_YUV420P :{
+
+            break;
+        }
 
         default:
             break;

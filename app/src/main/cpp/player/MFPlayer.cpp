@@ -9,7 +9,7 @@ bool MFPlayer::init(const char *path, JNIEnv *env, jobject surface) {
 
     int ret = 0;
 
-    
+
 
     // 打开媒体文件，找到视频流
     m_FormatContext = avformat_alloc_context();
@@ -35,17 +35,17 @@ bool MFPlayer::init(const char *path, JNIEnv *env, jobject surface) {
     } else {
         LOGI("---- Find video stream index:%d ----",m_VideoSteamIndex);
 
-        m_RenderQueue = new queue<RenderData*>();
+        m_VideoQueue = new queue<RenderData*>();
 
         AVCodecParameters *parameters = m_FormatContext->streams[m_VideoSteamIndex]->codecpar;
-        render = new ANativeWindowRender();
-        if (!render->initRender(env,surface,parameters->width,parameters->height,m_RenderQueue) ){
+        windowRender = new ANativeWindowRender();
+        if (!windowRender->initRender(env, surface, parameters->width, parameters->height, m_VideoQueue) ){
             return false;
         }
-        VideoRenderParams *params = render->getRenderParams();
+        VideoRenderParams *params = windowRender->getRenderParams();
 
         videoDecoder = new VideoDecoder();
-        if (!videoDecoder->initDecoder(m_FormatContext,params,m_RenderQueue)){
+        if (!videoDecoder->initDecoder(m_FormatContext, params, m_VideoQueue)){
             return false;
         }
     }
@@ -57,6 +57,17 @@ bool MFPlayer::init(const char *path, JNIEnv *env, jobject surface) {
         logError(ret,"Failed to find any AVMEDIA_TYPE_AUDIO stream");
     } else {
         LOGI("---- Find audio stream index:%d ----",m_AudioSteamIndex);
+        m_AudioQueue = new queue<RenderData*>();
+        audioRender = new AudioSLESRender();
+        if (!audioRender->initRender(m_AudioQueue)){
+            return false;
+        }
+
+        AudioRenderParams *params = audioRender->getRenderParams();
+        audioDecoder = new AudioDecoder();
+        if (!audioDecoder->initDecoder(m_FormatContext,params,m_AudioQueue)){
+            return false;
+        }
     }
 
     return true;
@@ -65,7 +76,10 @@ bool MFPlayer::init(const char *path, JNIEnv *env, jobject surface) {
 
 void MFPlayer::play() {
     videoDecoder->start();
-    render->start();
+    audioDecoder->start();
+
+    windowRender->start();
+    audioRender->start();
 }
 
 

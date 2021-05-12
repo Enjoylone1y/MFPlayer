@@ -32,8 +32,6 @@ public:
 
     static void *threadFunc(void* renderInst);
 
-    void renderLoop();
-
 private:
 
     pthread_t m_Thread;
@@ -45,6 +43,8 @@ private:
     ANativeWindow_Buffer m_WindowBuffer;
 
     VideoRenderParams *m_RenderParams;
+
+    void renderLoop();
 };
 
 

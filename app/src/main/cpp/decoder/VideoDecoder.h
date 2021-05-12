@@ -5,17 +5,8 @@
 #ifndef MFPLAYER_VIDEODECODER_H
 #define MFPLAYER_VIDEODECODER_H
 
-extern "C" {
-#include <libavformat/avformat.h>
-#include <libavcodec/codec.h>
-#include <libavutil/imgutils.h>
-#include <libswscale/swscale.h>
-#include <libswresample/swresample.h>
-};
-
 #include "Base.h"
-#include <pthread.h>
-#include <queue>
+
 
 using namespace std;
 
@@ -36,8 +27,6 @@ public:
     static void* threadFunc(void *decoderInst);
 
 private:
-
-
     int loopDecode();
     void parseFrame();
 

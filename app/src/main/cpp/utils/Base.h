@@ -6,11 +6,22 @@
 #define MFPLAYER_BASE_H
 
 
-
 extern "C" {
-#include <libavutil/pixfmt.h>
-#include <libavutil/frame.h>
-};
+#include <libavformat/avformat.h>
+#include <libavcodec/codec.h>
+#include <libswscale/swscale.h>
+#include <libswresample/swresample.h>
+#include <libavutil/imgutils.h>
+#include <libavutil/time.h>
+#include <libavutil/opt.h>
+}
+
+#include <SLES/OpenSLES.h>
+#include <SLES/OpenSLES_Android.h>
+
+#include <pthread.h>
+#include <queue>
+#include "Utils.h"
 
 enum PlayerState {
     PREPARING,
@@ -33,28 +44,34 @@ typedef struct VideoRenderParams {
 } VideoRenderParams;
 
 
+typedef struct AudioRenderParams {
+    uint64_t channelLayout;
+    AVSampleFormat simpleFormat;
+    int nbSimple;
+    int simpleRate;
+} AudioRenderParams;
+
 
 typedef struct RenderData {
 
     MediaType type;
+    int64_t pts;
 
     /*for video*/
     int width,height;
     int format;
     int key_frame;
-    int64_t pts;
 
-    uint8_t* data[AV_NUM_DATA_POINTERS];
-    int linesize[AV_NUM_DATA_POINTERS];
+
+    uint8_t* data[AV_NUM_DATA_POINTERS] = {nullptr};
+    int linesize[AV_NUM_DATA_POINTERS] = { 0 };
 
     /*for audio*/
+    int nbSamples;
+    int audioDataSize;
 
-    RenderData(){
-        for (int i = 0; i < AV_NUM_DATA_POINTERS; ++i) {
-            data[i] = nullptr;
-            linesize[i] = 0;
-        }
-    }
+    uint8_t *audioData;
+
 } RenderData;
 
 
