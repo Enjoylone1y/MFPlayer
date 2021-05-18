@@ -29,9 +29,6 @@ private:
 
     AVFormatContext *m_FormatContext;
 
-    queue<RenderData*> *m_VideoQueue;
-    queue<RenderData*> *m_AudioQueue;
-
     int m_VideoSteamIndex;
     int m_AudioSteamIndex;
 

@@ -6,17 +6,20 @@
 #define MFPLAYER_AUDIOSLESRENDER_H
 
 #include "Base.h"
+#include "AudioRender.h"
 
 using namespace std;
 
-class AudioSLESRender {
+class AudioSLESRender : public AudioRender{
 
 public:
     AudioSLESRender();
     ~AudioSLESRender();
 
-    bool initRender( queue<RenderData*> *queue );
+    bool initRender();
     AudioRenderParams * getRenderParams();
+
+    void renderAudioFrame(RenderData* renderData);
 
     bool start();
     bool pause();
@@ -25,6 +28,9 @@ public:
     void playAudio();
 
 private:
+
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
 
     queue<RenderData*> *m_RenderQueue;
 
@@ -42,8 +48,6 @@ private:
     SLVolumeItf playerVolume = NULL;
 
     SLAndroidSimpleBufferQueueItf  audioBuffQueue;
-
-    pthread_mutex_t mutex;
 };
 
 

@@ -14,37 +14,28 @@
 #include "Base.h"
 #include <queue>
 #include <pthread.h>
+#include "VideoRender.h"
 
 using namespace std;
 
 
-class ANativeWindowRender {
+class ANativeWindowRender: public VideoRender {
+
 public:
     ANativeWindowRender();
     ~ANativeWindowRender();
 
-    bool initRender( JNIEnv *env, jobject surface,int videoWidth, int videoHeight, queue<RenderData*> *queue);
+    bool initRender( JNIEnv *env, jobject surface,int videoWidth, int videoHeight);
     VideoRenderParams * getRenderParams();
 
-    bool start();
-    bool pause();
-    bool stop();
-
-    static void *threadFunc(void* renderInst);
+    void renderVideoFrame(RenderData* renderData);
 
 private:
-
-    pthread_t m_Thread;
-
-    PlayerState m_State;
-    queue<RenderData*> *m_RenderQueue;
 
     ANativeWindow *m_NativeWindow;
     ANativeWindow_Buffer m_WindowBuffer;
 
     VideoRenderParams *m_RenderParams;
-
-    void renderLoop();
 };
 
 

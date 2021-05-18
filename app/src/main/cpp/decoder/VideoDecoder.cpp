@@ -15,12 +15,12 @@ VideoDecoder::~VideoDecoder() {
 }
 
 
-bool VideoDecoder::initDecoder(AVFormatContext *fmt_ctx, VideoRenderParams *params, queue<RenderData*> *renderQueue) {
+bool VideoDecoder::initDecoder(AVFormatContext *fmt_ctx, VideoRenderParams *params) {
 
     int ret = 0;
 
     m_FormatContext = fmt_ctx;
-    m_RenderQueue = renderQueue;
+
     m_RenderParams = params;
 
     ret = m_StreamIndex = av_find_best_stream(m_FormatContext, AVMEDIA_TYPE_VIDEO,
@@ -111,7 +111,12 @@ PlayerState VideoDecoder::getState() {
 }
 
 
-void *VideoDecoder::threadFunc(void *decoderInst) {
+void VideoDecoder::setVideoRender(VideoRender *videoRender) {
+    m_VideoRender = videoRender;
+}
+
+
+void * VideoDecoder::threadFunc(void *decoderInst) {
     auto *videoDecoder = static_cast<VideoDecoder *>(decoderInst);
     if (videoDecoder) {
         videoDecoder->loopDecode();
@@ -119,16 +124,16 @@ void *VideoDecoder::threadFunc(void *decoderInst) {
     return nullptr;
 }
 
+void VideoDecoder::start() {
+    if (!m_Thread) {
+        pthread_create(&m_Thread, nullptr, threadFunc, this);
+    }
+}
+
 
 int VideoDecoder::loopDecode() {
     int ret = 0;
     do {
-        // 队列达到一定值先休眠10MS暂停解码
-        if (m_RenderQueue->size() > 100) {
-            av_usleep(10);
-            continue;
-        }
-
         ret = av_read_frame(m_FormatContext, m_Packet);
         if (ret == 0 && m_Packet->stream_index == m_StreamIndex) {
             // 解码
@@ -179,7 +184,7 @@ void VideoDecoder::parseFrame() {
             renderData->data[0] = (uint8_t*) malloc(renderData->linesize[0] * renderData->height);
             memcpy(renderData->data[0],m_RenderFrame->data[0],renderData->linesize[0] * renderData->height);
 
-            m_RenderQueue->push(renderData);
+            m_VideoRender->renderVideoFrame(renderData);
             break;
         }
 
@@ -194,11 +199,7 @@ void VideoDecoder::parseFrame() {
 }
 
 
-void VideoDecoder::start() {
-    if (!m_Thread) {
-        pthread_create(&m_Thread, nullptr, threadFunc, this);
-    }
-}
+
 
 
 void VideoDecoder::resume() {

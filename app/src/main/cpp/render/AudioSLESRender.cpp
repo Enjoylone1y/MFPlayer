@@ -13,15 +13,12 @@ AudioSLESRender::~AudioSLESRender() {
 }
 
 static void AudioPlayerCallback(SLAndroidSimpleBufferQueueItf bufferQueue, void *context) {
-    LOGI("--- AudioPlayerCallback ----");
     auto *render = static_cast<AudioSLESRender*>(context);
     if (render) render->playAudio();
 }
 
 
-bool AudioSLESRender::initRender(queue<RenderData *> *queue) {
-
-    m_RenderQueue = queue;
+bool AudioSLESRender::initRender() {
 
     SLDataSource  dataSource;
     SLDataSink dataSink;
@@ -110,6 +107,11 @@ bool AudioSLESRender::initRender(queue<RenderData *> *queue) {
     result = (*audioBuffQueue)->RegisterCallback(audioBuffQueue, AudioPlayerCallback, this);
     (void)result;
 
+
+    pthread_mutex_init(&mutex, nullptr);
+    pthread_cond_init(&cond, nullptr);
+    m_RenderQueue = new queue<RenderData*>();
+
     return true;
 }
 
@@ -118,9 +120,23 @@ AudioRenderParams *AudioSLESRender::getRenderParams() {
 }
 
 
-bool AudioSLESRender::start() {
-    pthread_mutex_init(&mutex, nullptr);
+void AudioSLESRender::renderAudioFrame(RenderData* renderData){
+    while (m_RenderQueue->size() > 10){
+        av_usleep(10);
+    }
+    pthread_mutex_lock(&mutex);
+    m_RenderQueue->push(renderData);
+    pthread_cond_signal(&cond);
+    pthread_mutex_unlock(&mutex);
+}
 
+
+bool AudioSLESRender::start() {
+    while (m_RenderQueue->size() < 10 ){
+        pthread_mutex_lock(&mutex);
+        pthread_cond_wait(&cond,&mutex);
+        pthread_mutex_unlock(&mutex);
+    }
     result = (*audioPlayer)->SetPlayState(audioPlayer,SL_PLAYSTATE_PLAYING);
     AudioPlayerCallback(audioBuffQueue, this);
     return true;
@@ -138,10 +154,12 @@ bool AudioSLESRender::stop() {
 
 
 void AudioSLESRender::playAudio(){
-    pthread_mutex_lock(&mutex);
-    while (m_RenderQueue->empty()){
-        av_usleep(10);
+    while (m_RenderQueue->size() < 10 ){
+        pthread_mutex_lock(&mutex);
+        pthread_cond_wait(&cond,&mutex);
+        pthread_mutex_unlock(&mutex);
     }
+    pthread_mutex_lock(&mutex);
     auto *renderData = m_RenderQueue->front();
     if (renderData){
         result = (*audioBuffQueue)->Enqueue(audioBuffQueue, renderData->audioData,
@@ -151,6 +169,7 @@ void AudioSLESRender::playAudio(){
         }
         m_RenderQueue->pop();
         delete [] renderData->audioData;
+        renderData->audioData = nullptr;
         delete renderData;
     }
     pthread_mutex_unlock(&mutex);

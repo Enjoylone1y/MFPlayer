@@ -34,19 +34,18 @@ bool MFPlayer::init(const char *path, JNIEnv *env, jobject surface) {
     } else {
         LOGI("---- Find video stream index:%d ----",m_VideoSteamIndex);
 
-        m_VideoQueue = new queue<RenderData*>();
-
         AVCodecParameters *parameters = m_FormatContext->streams[m_VideoSteamIndex]->codecpar;
         windowRender = new ANativeWindowRender();
-        if (!windowRender->initRender(env, surface, parameters->width, parameters->height, m_VideoQueue) ){
+        if (!windowRender->initRender(env, surface, parameters->width, parameters->height) ){
             return false;
         }
         VideoRenderParams *params = windowRender->getRenderParams();
 
         videoDecoder = new VideoDecoder();
-        if (!videoDecoder->initDecoder(m_FormatContext, params, m_VideoQueue)){
+        if (!videoDecoder->initDecoder(m_FormatContext, params)){
             return false;
         }
+        videoDecoder->setVideoRender(windowRender);
     }
 
     m_AudioSteamIndex = av_find_best_stream(m_FormatContext,AVMEDIA_TYPE_AUDIO,
@@ -56,26 +55,25 @@ bool MFPlayer::init(const char *path, JNIEnv *env, jobject surface) {
         logError(ret,"Failed to find any AVMEDIA_TYPE_AUDIO stream");
     } else {
         LOGI("---- Find audio stream index:%d ----",m_AudioSteamIndex);
-        m_AudioQueue = new queue<RenderData*>();
         audioRender = new AudioSLESRender();
-        if (!audioRender->initRender(m_AudioQueue)){
+        if (!audioRender->initRender()){
             return false;
         }
-
         AudioRenderParams *params = audioRender->getRenderParams();
         audioDecoder = new AudioDecoder();
-        if (!audioDecoder->initDecoder(m_FormatContext,params,m_AudioQueue)){
+        if (!audioDecoder->initDecoder(m_FormatContext,params)){
             return false;
         }
+        audioDecoder->setAudioRender(audioRender);
     }
 
     return true;
 }
 
 
+
 void MFPlayer::play() {
-    videoDecoder->start();
-    windowRender->start();
+//    videoDecoder->start();
 
     audioDecoder->start();
     audioRender->start();

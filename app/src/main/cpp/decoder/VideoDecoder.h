@@ -6,7 +6,7 @@
 #define MFPLAYER_VIDEODECODER_H
 
 #include "Base.h"
-
+#include "VideoRender.h"
 
 using namespace std;
 
@@ -16,7 +16,7 @@ public:
     VideoDecoder();
     ~VideoDecoder();
 
-    bool initDecoder(AVFormatContext *fmt_ctx, VideoRenderParams *params, queue<RenderData*> *renderQueue);
+    bool initDecoder(AVFormatContext *fmt_ctx, VideoRenderParams *params);
     void updateState(PlayerState newState);
     PlayerState getState();
     void start();
@@ -24,7 +24,9 @@ public:
     void pause();
     void stop();
 
-    static void* threadFunc(void *decoderInst);
+    void setVideoRender(VideoRender* videoRender);
+
+    static void * threadFunc(void *decoderInst);
 
 private:
     int loopDecode();
@@ -33,13 +35,13 @@ private:
 
 private:
     PlayerState m_State = PREPARING;
-    pthread_t m_Thread = 0;
 
+    pthread_t m_Thread = 0;
     pthread_mutex_t m_Mutex;
 
-    queue<RenderData*> *m_RenderQueue = nullptr;
-
     VideoRenderParams *m_RenderParams = nullptr;
+
+    VideoRender *m_VideoRender = nullptr;
 
     AVFormatContext *m_FormatContext = nullptr;
 

@@ -6,6 +6,7 @@
 #define MFPLAYER_AUDIODECODER_H
 
 #include "Base.h"
+#include "AudioRender.h"
 
 using namespace std;
 
@@ -15,7 +16,10 @@ public:
     AudioDecoder();
     ~AudioDecoder();
 
-    bool initDecoder(AVFormatContext *fmt_ctx, AudioRenderParams *params, queue<RenderData*> *renderQueue);
+    bool initDecoder(AVFormatContext *fmt_ctx, AudioRenderParams *params);
+
+    void setAudioRender(AudioRender* audioRender);
+
     void updateState(PlayerState newState);
     PlayerState getState();
     void start();
@@ -24,7 +28,6 @@ public:
     void stop();
 
     static void* threadFunc(void *decoderInst);
-
 private:
     int loopDecode();
     void parseFrame();
@@ -32,9 +35,7 @@ private:
     PlayerState m_State = PREPARING;
     pthread_t m_Thread = 0;
 
-    pthread_mutex_t m_Mutex;
-
-    queue<RenderData*> *m_RenderQueue = nullptr;
+    AudioRender* m_AudioRender = nullptr;
 
     AudioRenderParams *m_RenderParams = nullptr;
 

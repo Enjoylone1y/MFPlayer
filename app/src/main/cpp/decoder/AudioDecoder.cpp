@@ -12,12 +12,10 @@ AudioDecoder::~AudioDecoder() {
 
 }
 
-bool AudioDecoder::initDecoder(AVFormatContext *fmt_ctx, AudioRenderParams *params,
-                               queue<RenderData *> *renderQueue) {
+bool AudioDecoder::initDecoder(AVFormatContext *fmt_ctx, AudioRenderParams *params) {
     int ret = 0;
 
     m_FormatContext = fmt_ctx;
-    m_RenderQueue = renderQueue;
     m_RenderParams = params;
 
     ret = m_StreamIndex = av_find_best_stream(m_FormatContext, AVMEDIA_TYPE_AUDIO,
@@ -91,6 +89,11 @@ bool AudioDecoder::initDecoder(AVFormatContext *fmt_ctx, AudioRenderParams *para
 }
 
 
+void AudioDecoder::setAudioRender(AudioRender *audioRender) {
+    m_AudioRender = audioRender;
+}
+
+
 void AudioDecoder::updateState(PlayerState newState) {
 
 }
@@ -127,14 +130,10 @@ void *AudioDecoder::threadFunc(void *decoderInst) {
     return nullptr;
 }
 
+
 int AudioDecoder::loopDecode() {
     int ret = 0;
     do {
-        // 队列达到一定值先休眠10MS暂停解码
-        if (m_RenderQueue->size() > 100) {
-            av_usleep(10);
-            continue;
-        }
         ret = av_read_frame(m_FormatContext, m_Packet);
         if (ret == 0 && m_Packet->stream_index == m_StreamIndex) {
             ret = avcodec_send_packet(m_CodecContext, m_Packet);
@@ -170,5 +169,6 @@ void AudioDecoder::parseFrame() {
     renderData->audioDataSize = m_FrameDataSize;
     renderData->audioData = (uint8_t*) malloc(m_FrameDataSize);
     memcpy(renderData->audioData,m_AudioOutBuffer,m_FrameDataSize);
-    m_RenderQueue->push(renderData);
+
+    m_AudioRender->renderAudioFrame(renderData);
 }
