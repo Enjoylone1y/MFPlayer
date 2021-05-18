@@ -53,7 +53,7 @@ bool AudioSLESRender::initRender() {
         (*envReverb)->SetEnvironmentalReverbProperties(envReverb,&settings);
     }
 
-    m_RenderParams = new AudioRenderParams ();
+    m_RenderParams = new RenderParams ();
     m_RenderParams->simpleFormat = AV_SAMPLE_FMT_S16;
     m_RenderParams->simpleRate = 44100;
     m_RenderParams->nbSimple = 1024;
@@ -115,7 +115,7 @@ bool AudioSLESRender::initRender() {
     return true;
 }
 
-AudioRenderParams *AudioSLESRender::getRenderParams() {
+RenderParams *AudioSLESRender::getRenderParams() {
     return m_RenderParams;
 }
 

@@ -39,7 +39,7 @@ bool ANativeWindowRender::initRender( JNIEnv *env, jobject surface,int videoWidt
         renderHeight = windowHeight;
     }
 
-    m_RenderParams = new VideoRenderParams ();
+    m_RenderParams = new RenderParams ();
     m_RenderParams->renderFormat = AV_PIX_FMT_RGBA;
     m_RenderParams->width = renderWidth;
     m_RenderParams->height = renderHeight;
@@ -55,7 +55,7 @@ bool ANativeWindowRender::initRender( JNIEnv *env, jobject surface,int videoWidt
 }
 
 
-VideoRenderParams* ANativeWindowRender::getRenderParams(){
+RenderParams* ANativeWindowRender::getRenderParams(){
     return m_RenderParams;
 }
 

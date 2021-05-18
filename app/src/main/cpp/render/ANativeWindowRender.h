@@ -26,7 +26,7 @@ public:
     ~ANativeWindowRender();
 
     bool initRender( JNIEnv *env, jobject surface,int videoWidth, int videoHeight);
-    VideoRenderParams * getRenderParams();
+    RenderParams * getRenderParams();
 
     void renderVideoFrame(RenderData* renderData);
 
@@ -35,7 +35,7 @@ private:
     ANativeWindow *m_NativeWindow;
     ANativeWindow_Buffer m_WindowBuffer;
 
-    VideoRenderParams *m_RenderParams;
+    RenderParams *m_RenderParams;
 };
 
 

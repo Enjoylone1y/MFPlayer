@@ -9,7 +9,6 @@ bool MFPlayer::init(const char *path, JNIEnv *env, jobject surface) {
 
     int ret = 0;
 
-
     // 打开媒体文件，找到视频流
     m_FormatContext = avformat_alloc_context();
 
@@ -39,9 +38,9 @@ bool MFPlayer::init(const char *path, JNIEnv *env, jobject surface) {
         if (!windowRender->initRender(env, surface, parameters->width, parameters->height) ){
             return false;
         }
-        VideoRenderParams *params = windowRender->getRenderParams();
+        RenderParams *params = windowRender->getRenderParams();
 
-        videoDecoder = new VideoDecoder();
+        videoDecoder = new VideoDecoder(AVMEDIA_TYPE_VIDEO);
         if (!videoDecoder->initDecoder(m_FormatContext, params)){
             return false;
         }
@@ -59,8 +58,8 @@ bool MFPlayer::init(const char *path, JNIEnv *env, jobject surface) {
         if (!audioRender->initRender()){
             return false;
         }
-        AudioRenderParams *params = audioRender->getRenderParams();
-        audioDecoder = new AudioDecoder();
+        RenderParams *params = audioRender->getRenderParams();
+        audioDecoder = new AudioDecoder(AVMEDIA_TYPE_AUDIO);
         if (!audioDecoder->initDecoder(m_FormatContext,params)){
             return false;
         }

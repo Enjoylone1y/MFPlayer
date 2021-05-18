@@ -17,7 +17,7 @@ public:
     ~AudioSLESRender();
 
     bool initRender();
-    AudioRenderParams * getRenderParams();
+    RenderParams * getRenderParams();
 
     void renderAudioFrame(RenderData* renderData);
 
@@ -34,7 +34,7 @@ private:
 
     queue<RenderData*> *m_RenderQueue;
 
-    AudioRenderParams *m_RenderParams;
+    RenderParams *m_RenderParams;
 
     SLresult result;
     SLObjectItf engineObj;

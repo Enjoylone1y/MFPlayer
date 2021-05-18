@@ -5,67 +5,29 @@
 #ifndef MFPLAYER_VIDEODECODER_H
 #define MFPLAYER_VIDEODECODER_H
 
-#include "Base.h"
+
 #include "VideoRender.h"
+#include "BaseDecoder.h"
 
 using namespace std;
 
-class VideoDecoder {
+class VideoDecoder : public BaseDecoder {
 
 public:
-    VideoDecoder();
+    VideoDecoder(AVMediaType mediaType);
     ~VideoDecoder();
 
-    bool initDecoder(AVFormatContext *fmt_ctx, VideoRenderParams *params);
-    void updateState(PlayerState newState);
-    PlayerState getState();
-    void start();
-    void resume();
-    void pause();
-    void stop();
+    bool initAVDecoder();
+
+    void parseFrame(AVFrame* frame);
 
     void setVideoRender(VideoRender* videoRender);
 
-    static void * threadFunc(void *decoderInst);
-
 private:
-    int loopDecode();
-    void parseFrame();
-
-
-private:
-    PlayerState m_State = PREPARING;
-
-    pthread_t m_Thread = 0;
-    pthread_mutex_t m_Mutex;
-
-    VideoRenderParams *m_RenderParams = nullptr;
 
     VideoRender *m_VideoRender = nullptr;
-
-    AVFormatContext *m_FormatContext = nullptr;
-
-    AVStream *m_Stream = nullptr;
-    AVCodec *m_Codec = nullptr;
-    AVCodecContext *m_CodecContext = nullptr;
-
-    AVPacket *m_Packet = nullptr;
-    AVFrame *m_VideoFrame = nullptr;
     AVFrame *m_RenderFrame = nullptr;
-
     SwsContext *m_SwsContext = nullptr;
-
-    int m_StreamIndex;
-
-    double m_TimeBase = 0;
-
-    int64_t m_CurrentTimeStamp = 0;
-    int64_t m_StartTimeStamp = -1;
-
-    //更新显示时间戳
-    void updateTimeStamp();
-    //音视频同步
-    long avTimeSync();
 };
 
 

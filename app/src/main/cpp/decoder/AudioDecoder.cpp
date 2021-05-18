@@ -4,69 +4,15 @@
 
 #include "AudioDecoder.h"
 
-AudioDecoder::AudioDecoder() {
-
+AudioDecoder::AudioDecoder(AVMediaType mediaType) {
+    m_MediaType = mediaType;
 }
 
 AudioDecoder::~AudioDecoder() {
 
 }
 
-bool AudioDecoder::initDecoder(AVFormatContext *fmt_ctx, AudioRenderParams *params) {
-    int ret = 0;
-
-    m_FormatContext = fmt_ctx;
-    m_RenderParams = params;
-
-    ret = m_StreamIndex = av_find_best_stream(m_FormatContext, AVMEDIA_TYPE_AUDIO,
-                                              -1, -1, nullptr, 0);
-    if (ret < 0) {
-        logError(ret, "Failed to find any audio stream");
-        return false;
-    }
-
-    LOGI("---- Find audio stream index:%d ----", m_StreamIndex);
-
-    m_Stream = m_FormatContext->streams[m_StreamIndex];
-
-
-    // 初始化解码器
-    m_Codec = avcodec_find_decoder(m_Stream->codecpar->codec_id);
-    if (!m_Codec) {
-        logError(-1, "Failed to find decoder");
-        return false;
-    }
-
-    LOGI("---- Find audio decoder:%s ----", m_Codec->name);
-
-    m_CodecContext = avcodec_alloc_context3(m_Codec);
-    if (!m_CodecContext) {
-        logError(-1, "Failed to alloc codec context");
-        return false;
-    }
-
-    ret = avcodec_parameters_to_context(m_CodecContext, m_Stream->codecpar);
-    if (ret < 0) {
-        logError(ret, "Failed to copy param to context");
-        return false;
-    }
-
-    ret = avcodec_open2(m_CodecContext, m_Codec, nullptr);
-    if (ret < 0) {
-        logError(ret, "Failed to open codec");
-        return false;
-    }
-
-    m_TimeBase =  av_q2d(m_Stream->time_base);
-
-    LOGI("-- audioTimeBase %lf", m_TimeBase );
-
-    m_Packet = av_packet_alloc();
-
-    m_AudioFrame = av_frame_alloc();
-
-    /*音频专属*/
-
+bool AudioDecoder::initAVDecoder() {
     m_SwrContext = swr_alloc();
 
     // 设置转换器输入输出参数
@@ -82,10 +28,10 @@ bool AudioDecoder::initDecoder(AVFormatContext *fmt_ctx, AudioRenderParams *para
     swr_init(m_SwrContext);
 
     m_nbSamples = (int) av_rescale_rnd(m_RenderParams->nbSimple, m_RenderParams->simpleRate,
-            m_CodecContext->sample_rate,AV_ROUND_UP);
+                                       m_CodecContext->sample_rate,AV_ROUND_UP);
 
     m_FrameDataSize = av_samples_get_buffer_size(nullptr,m_RenderParams->channels,
-            m_nbSamples,m_RenderParams->simpleFormat,1);
+                                                 m_nbSamples,m_RenderParams->simpleFormat,1);
 
     m_AudioOutBuffer = (uint8_t *) malloc(m_FrameDataSize);
 
@@ -93,90 +39,17 @@ bool AudioDecoder::initDecoder(AVFormatContext *fmt_ctx, AudioRenderParams *para
 }
 
 
-void AudioDecoder::setAudioRender(AudioRender *audioRender) {
-    m_AudioRender = audioRender;
-}
-
-
-void AudioDecoder::updateState(PlayerState newState) {
-
-}
-
-
-PlayerState AudioDecoder::getState() {
-    return PREPARED;
-}
-
-
-void AudioDecoder::start() {
-    if (!m_Thread) {
-        pthread_create(&m_Thread, nullptr, threadFunc, this);
-    }
-}
-
-void AudioDecoder::resume() {
-
-}
-
-void AudioDecoder::pause() {
-
-}
-
-void AudioDecoder::stop() {
-
-}
-
-void *AudioDecoder::threadFunc(void *decoderInst) {
-    auto *decoder = static_cast<AudioDecoder*>(decoderInst);
-    if (decoder){
-        decoder->loopDecode();
-    }
-    return nullptr;
-}
-
-
-int AudioDecoder::loopDecode() {
-    int ret;
-    do {
-        if(m_StartTimeStamp == -1)
-            m_StartTimeStamp = getSysCurrentTime();
-
-        ret = av_read_frame(m_FormatContext, m_Packet);
-        if (ret == 0 && m_Packet->stream_index == m_StreamIndex) {
-            ret = avcodec_send_packet(m_CodecContext, m_Packet);
-            while (ret == 0) {
-                ret = avcodec_receive_frame(m_CodecContext, m_AudioFrame);
-                if (ret == 0) {
-                    LOGI("receive audioFrame format:%d,channelLayout:%ld,nbSimple:%d,simpleRate:%d",
-                         m_AudioFrame->format,m_AudioFrame->channel_layout,m_AudioFrame->nb_samples
-                    ,m_AudioFrame->sample_rate);
-                    parseFrame();
-                } else if(ret != AVERROR_EOF && ret != AVERROR(EAGAIN)) {
-                    logError(ret, "Error on decoding");
-                }
-            }
-        }
-        av_packet_unref(m_Packet);
-    } while (m_State != STOP);
-
-    return ret;
-}
-
-
-void AudioDecoder::parseFrame() {
-
-//    updateTimeStamp();
-//    avTimeSync();
+void AudioDecoder::parseFrame(AVFrame *frame) {
 
     int ret = swr_convert(m_SwrContext,&m_AudioOutBuffer,m_RenderParams->nbSimple,
-            (const uint8_t**) m_AudioFrame->data,m_AudioFrame->nb_samples);
+                          (const uint8_t**) frame->data,frame->nb_samples);
     if (ret < 0){
         logError(ret,"swr_convert error");
         return;
     }
 
     auto *renderData = new RenderData ();
-    renderData->pts = m_AudioFrame->pts;
+    renderData->pts = frame->pts;
     renderData->nbSamples = m_nbSamples;
     renderData->audioDataSize = m_FrameDataSize;
     renderData->audioData = (uint8_t*) malloc(m_FrameDataSize);
@@ -186,31 +59,8 @@ void AudioDecoder::parseFrame() {
 }
 
 
-void AudioDecoder::updateTimeStamp() {
 
-    if(m_AudioFrame->pkt_dts != AV_NOPTS_VALUE) {
-        m_CurrentTimeStamp = m_AudioFrame->pkt_dts;
-    } else if (m_AudioFrame->pts != AV_NOPTS_VALUE) {
-        m_CurrentTimeStamp = m_AudioFrame->pts;
-    } else {
-        m_CurrentTimeStamp = 0;
-    }
 
-    m_CurrentTimeStamp = (int64_t)(m_CurrentTimeStamp * m_TimeBase * 1000);
-}
-
-long AudioDecoder::avTimeSync() {
-    long curSysTime = getSysCurrentTime();
-    //基于系统时钟计算从开始播放流逝的时间
-    long elapsedTime = curSysTime - m_StartTimeStamp;
-
-    //向系统时钟同步
-    if(m_CurrentTimeStamp > elapsedTime) {
-        //休眠时间
-        auto sleepTime = static_cast<unsigned int>(m_CurrentTimeStamp - elapsedTime);//ms
-        //限制休眠时间不能过长
-//        sleepTime = sleepTime > DELAY_THRESHOLD ? DELAY_THRESHOLD :  sleepTime;
-        av_usleep(sleepTime * 1000);
-    }
-    return 0;
+void AudioDecoder::setAudioRender(AudioRender *audioRender) {
+    m_AudioRender = audioRender;
 }

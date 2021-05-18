@@ -32,30 +32,23 @@ enum PlayerState {
 };
 
 
-enum MediaType {
-    MEDIA_TYPE_VIDEO,
-    MEDIA_TYPE_AUDIO
-};
 
+typedef struct RenderParams {
 
-typedef struct VideoRenderParams {
     AVPixelFormat renderFormat;
-    int width,height;
-} VideoRenderParams;
+    int width;
+    int height;
 
-
-typedef struct AudioRenderParams {
-    uint64_t channelLayout;
     AVSampleFormat simpleFormat;
+    uint64_t channelLayout;
     int nbSimple;
     int simpleRate;
     int channels;
-} AudioRenderParams;
+} RenderParams;
 
 
 typedef struct RenderData {
 
-    MediaType type;
     int64_t pts;
 
     /*for video*/

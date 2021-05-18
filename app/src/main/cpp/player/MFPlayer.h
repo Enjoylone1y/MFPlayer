@@ -11,9 +11,11 @@
 #include <queue>
 
 #include "Utils.h"
-#include "ANativeWindowRender.h"
+
+#include "BaseDecoder.h"
 #include "VideoDecoder.h"
 #include "AudioDecoder.h"
+#include "ANativeWindowRender.h"
 #include "AudioSLESRender.h"
 
 
