@@ -73,10 +73,9 @@ bool MFPlayer::init(const char *path, JNIEnv *env, jobject surface) {
 
 
 void MFPlayer::play() {
-//    videoDecoder->start();
-
     audioDecoder->start();
     audioRender->start();
+    videoDecoder->start();
 }
 
 

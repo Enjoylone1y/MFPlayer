@@ -29,4 +29,12 @@ static void logError(int ret,const char* msg){
     }
 }
 
+static long long getSysCurrentTime()
+{
+    struct timeval time;
+    gettimeofday(&time, NULL);
+    long long curTime = ((long long)(time.tv_sec))*1000+time.tv_usec/1000;
+    return curTime;
+}
+
 #endif //MFPLAYER_UTILS_H

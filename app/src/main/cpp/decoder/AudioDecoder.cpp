@@ -57,6 +57,10 @@ bool AudioDecoder::initDecoder(AVFormatContext *fmt_ctx, AudioRenderParams *para
         return false;
     }
 
+    m_TimeBase =  av_q2d(m_Stream->time_base);
+
+    LOGI("-- audioTimeBase %lf", m_TimeBase );
+
     m_Packet = av_packet_alloc();
 
     m_AudioFrame = av_frame_alloc();
@@ -132,8 +136,11 @@ void *AudioDecoder::threadFunc(void *decoderInst) {
 
 
 int AudioDecoder::loopDecode() {
-    int ret = 0;
+    int ret;
     do {
+        if(m_StartTimeStamp == -1)
+            m_StartTimeStamp = getSysCurrentTime();
+
         ret = av_read_frame(m_FormatContext, m_Packet);
         if (ret == 0 && m_Packet->stream_index == m_StreamIndex) {
             ret = avcodec_send_packet(m_CodecContext, m_Packet);
@@ -157,18 +164,53 @@ int AudioDecoder::loopDecode() {
 
 
 void AudioDecoder::parseFrame() {
+
+//    updateTimeStamp();
+//    avTimeSync();
+
     int ret = swr_convert(m_SwrContext,&m_AudioOutBuffer,m_RenderParams->nbSimple,
             (const uint8_t**) m_AudioFrame->data,m_AudioFrame->nb_samples);
     if (ret < 0){
         logError(ret,"swr_convert error");
         return;
     }
-    LOGI("number of samples output per channel: %d",ret);
+
     auto *renderData = new RenderData ();
+    renderData->pts = m_AudioFrame->pts;
     renderData->nbSamples = m_nbSamples;
     renderData->audioDataSize = m_FrameDataSize;
     renderData->audioData = (uint8_t*) malloc(m_FrameDataSize);
     memcpy(renderData->audioData,m_AudioOutBuffer,m_FrameDataSize);
 
     m_AudioRender->renderAudioFrame(renderData);
+}
+
+
+void AudioDecoder::updateTimeStamp() {
+
+    if(m_AudioFrame->pkt_dts != AV_NOPTS_VALUE) {
+        m_CurrentTimeStamp = m_AudioFrame->pkt_dts;
+    } else if (m_AudioFrame->pts != AV_NOPTS_VALUE) {
+        m_CurrentTimeStamp = m_AudioFrame->pts;
+    } else {
+        m_CurrentTimeStamp = 0;
+    }
+
+    m_CurrentTimeStamp = (int64_t)(m_CurrentTimeStamp * m_TimeBase * 1000);
+}
+
+long AudioDecoder::avTimeSync() {
+    long curSysTime = getSysCurrentTime();
+    //基于系统时钟计算从开始播放流逝的时间
+    long elapsedTime = curSysTime - m_StartTimeStamp;
+
+    //向系统时钟同步
+    if(m_CurrentTimeStamp > elapsedTime) {
+        //休眠时间
+        auto sleepTime = static_cast<unsigned int>(m_CurrentTimeStamp - elapsedTime);//ms
+        //限制休眠时间不能过长
+//        sleepTime = sleepTime > DELAY_THRESHOLD ? DELAY_THRESHOLD :  sleepTime;
+        av_usleep(sleepTime * 1000);
+    }
+    return 0;
 }

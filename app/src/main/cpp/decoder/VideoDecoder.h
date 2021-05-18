@@ -56,6 +56,16 @@ private:
     SwsContext *m_SwsContext = nullptr;
 
     int m_StreamIndex;
+
+    double m_TimeBase = 0;
+
+    int64_t m_CurrentTimeStamp = 0;
+    int64_t m_StartTimeStamp = -1;
+
+    //更新显示时间戳
+    void updateTimeStamp();
+    //音视频同步
+    long avTimeSync();
 };
 
 

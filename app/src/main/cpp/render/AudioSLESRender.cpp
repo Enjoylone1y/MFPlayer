@@ -162,6 +162,9 @@ void AudioSLESRender::playAudio(){
     pthread_mutex_lock(&mutex);
     auto *renderData = m_RenderQueue->front();
     if (renderData){
+
+        LOGI("audioFramePts:%ld",renderData->pts);
+
         result = (*audioBuffQueue)->Enqueue(audioBuffQueue, renderData->audioData,
                                             (SLuint32) renderData->audioDataSize);
         if (result != SL_RESULT_SUCCESS){

@@ -63,9 +63,7 @@ VideoRenderParams* ANativeWindowRender::getRenderParams(){
 void ANativeWindowRender::renderVideoFrame(RenderData *renderData) {
     if (renderData){
 
-        LOGI("receive renderData width:%d,height:%d  lineSize:[%d,%d,%d]",
-             renderData->width, renderData->height, renderData->linesize[0],
-             renderData->linesize[1], renderData->linesize[2]);
+        LOGI("videoFramePts:%ld",renderData->pts);
 
         // 锁定缓冲区，拷贝数据
         int result = ANativeWindow_lock(m_NativeWindow,&m_WindowBuffer, nullptr);

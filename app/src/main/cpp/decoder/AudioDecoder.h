@@ -56,6 +56,16 @@ private:
     int m_FrameDataSize;
 
     uint8_t *m_AudioOutBuffer;
+
+    uint64_t m_CurrentTimeStamp = 0;
+    uint64_t m_StartTimeStamp = -1;
+
+    double m_TimeBase = 0;
+
+    //更新显示时间戳
+    void updateTimeStamp();
+    //音视频同步
+    long avTimeSync();
 };
 
 

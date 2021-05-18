@@ -62,6 +62,10 @@ bool VideoDecoder::initDecoder(AVFormatContext *fmt_ctx, VideoRenderParams *para
         return false;
     }
 
+    m_TimeBase =  av_q2d(m_Stream->time_base);
+
+    LOGI("-- videoTimeBase %lf", m_TimeBase );
+
     m_Packet = av_packet_alloc();
     m_VideoFrame = av_frame_alloc();
 
@@ -132,8 +136,12 @@ void VideoDecoder::start() {
 
 
 int VideoDecoder::loopDecode() {
-    int ret = 0;
+    int ret;
     do {
+
+        if(m_StartTimeStamp == -1)
+            m_StartTimeStamp = getSysCurrentTime();
+
         ret = av_read_frame(m_FormatContext, m_Packet);
         if (ret == 0 && m_Packet->stream_index == m_StreamIndex) {
             // 解码
@@ -158,15 +166,46 @@ int VideoDecoder::loopDecode() {
 }
 
 
+void VideoDecoder::updateTimeStamp() {
+
+    if(m_VideoFrame->pkt_dts != AV_NOPTS_VALUE) {
+        m_CurrentTimeStamp = m_VideoFrame->pkt_dts;
+    } else if (m_VideoFrame->pts != AV_NOPTS_VALUE) {
+        m_CurrentTimeStamp = m_VideoFrame->pts;
+    } else {
+        m_CurrentTimeStamp = 0;
+    }
+
+    m_CurrentTimeStamp = (int64_t)(m_CurrentTimeStamp * m_TimeBase * 1000);
+}
+
+
+long VideoDecoder::avTimeSync() {
+    long curSysTime = getSysCurrentTime();
+    //基于系统时钟计算从开始播放流逝的时间
+    long elapsedTime = curSysTime - m_StartTimeStamp;
+
+    //向系统时钟同步
+    if(m_CurrentTimeStamp > elapsedTime) {
+        //休眠时间
+        auto sleepTime = static_cast<unsigned int>(m_CurrentTimeStamp - elapsedTime);//ms
+        //限制休眠时间不能过长
+//        sleepTime = sleepTime > DELAY_THRESHOLD ? DELAY_THRESHOLD :  sleepTime;
+        av_usleep(sleepTime * 1000);
+    }
+    return 0;
+}
+
+
 void VideoDecoder::parseFrame() {
+
+//    updateTimeStamp();
+//    avTimeSync();
+
     switch(m_RenderParams->renderFormat){
         case AV_PIX_FMT_RGBA:{
             sws_scale(m_SwsContext, m_VideoFrame->data, m_VideoFrame->linesize,
                       0, m_VideoFrame->height, m_RenderFrame->data, m_RenderFrame->linesize);
-
-            LOGI("AfterSws RenderFrame  format:%d,width:%d,height:%d lineSize:[%d,%d,%d]",
-                 m_RenderFrame->format,m_RenderFrame->width,m_RenderFrame->height, m_RenderFrame->linesize[0],
-                 m_RenderFrame->linesize[1], m_RenderFrame->linesize[2]);
 
             auto *renderData = new RenderData ();
             renderData->data[0] = m_RenderFrame->data[0];
