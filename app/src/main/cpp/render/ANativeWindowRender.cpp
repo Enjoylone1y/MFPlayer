@@ -122,6 +122,7 @@ void ANativeWindowRender::renderLoop() {
 
             // 渲染完毕，删除对象
             m_RenderQueue->pop();
+            delete [] renderData->data[0];
             delete renderData;
         }
     }

@@ -80,7 +80,7 @@ bool VideoDecoder::initDecoder(AVFormatContext *fmt_ctx, VideoRenderParams *para
             m_RenderParams->width, m_RenderParams->height, 1);
 
     // 分配内存
-    auto buffer = (uint8_t *) av_malloc(bufferSize * sizeof(uint8_t));
+    auto *buffer = (uint8_t *) av_malloc(bufferSize * sizeof(uint8_t));
 
     // 设定指针位置
     av_image_fill_arrays(m_RenderFrame->data, m_RenderFrame->linesize, buffer, m_RenderParams->renderFormat,
@@ -128,23 +128,24 @@ int VideoDecoder::loopDecode() {
             av_usleep(10);
             continue;
         }
+
         ret = av_read_frame(m_FormatContext, m_Packet);
-        if (m_Packet->stream_index == m_StreamIndex) {
+        if (ret == 0 && m_Packet->stream_index == m_StreamIndex) {
+            // 解码
             ret = avcodec_send_packet(m_CodecContext, m_Packet);
-            while (ret >= 0) {
+            while (ret == 0) {
                 ret = avcodec_receive_frame(m_CodecContext, m_VideoFrame);
-                if (ret < 0) {
-                    if (ret != AVERROR_EOF && ret != AVERROR(EAGAIN)) {
-                        logError(ret, "Error on decoding");
-                    }
-                } else {
+                if (ret == 0) {
                     LOGI("receive videoFrame format:%d,width:%d,height:%d  lineSize:[%d,%d,%d]",
                          m_VideoFrame->format,m_VideoFrame->width, m_VideoFrame->height, m_VideoFrame->linesize[0],
                          m_VideoFrame->linesize[1], m_VideoFrame->linesize[2]);
                     parseFrame();
+                } else if (ret != AVERROR_EOF && ret != AVERROR(EAGAIN)) {
+                    logError(ret, "Error on decoding");
                 }
             }
         }
+
         av_packet_unref(m_Packet);
     } while (m_State != STOP);
 
@@ -164,7 +165,6 @@ void VideoDecoder::parseFrame() {
 
             auto *renderData = new RenderData ();
             renderData->data[0] = m_RenderFrame->data[0];
-            renderData->linesize[0] = m_RenderFrame->linesize[0];
 
             renderData->pts = m_VideoFrame->pts;
             renderData->key_frame = m_VideoFrame->key_frame;
@@ -172,6 +172,12 @@ void VideoDecoder::parseFrame() {
             renderData->format = m_RenderParams->renderFormat;
             renderData->width = m_RenderParams->width;
             renderData->height = m_RenderParams->height;
+
+            // 拷贝数据
+            renderData->linesize[0] = m_RenderParams->width * 4;
+
+            renderData->data[0] = (uint8_t*) malloc(renderData->linesize[0] * renderData->height);
+            memcpy(renderData->data[0],m_RenderFrame->data[0],renderData->linesize[0] * renderData->height);
 
             m_RenderQueue->push(renderData);
             break;

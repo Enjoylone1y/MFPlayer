@@ -39,8 +39,10 @@ bool AudioSLESRender::initRender(queue<RenderData *> *queue) {
     result = (*engineObj)->GetInterface(engineObj,SL_IID_ENGINE,&audioEngine);
     (void)result;
 
+    const SLInterfaceID mixIds[1] = {SL_IID_ENVIRONMENTALREVERB};
+    const SLboolean mixReq[1] = {SL_BOOLEAN_FALSE};
     // create outputMix
-    result = (*audioEngine)->CreateOutputMix(audioEngine,&outputMixObj,0,nullptr,nullptr);
+    result = (*audioEngine)->CreateOutputMix(audioEngine,&outputMixObj,1,mixIds,mixReq);
     (void)result;
 
     (*outputMixObj)->Realize(outputMixObj,SL_BOOLEAN_FALSE);
@@ -53,6 +55,13 @@ bool AudioSLESRender::initRender(queue<RenderData *> *queue) {
         const SLEnvironmentalReverbSettings settings = SL_I3DL2_ENVIRONMENT_PRESET_DEFAULT;
         (*envReverb)->SetEnvironmentalReverbProperties(envReverb,&settings);
     }
+
+    m_RenderParams = new AudioRenderParams ();
+    m_RenderParams->simpleFormat = AV_SAMPLE_FMT_S16;
+    m_RenderParams->simpleRate = 44100;
+    m_RenderParams->nbSimple = 1024;
+    m_RenderParams->channelLayout = AV_CH_LAYOUT_STEREO;
+    m_RenderParams->channels = 2;
 
     // config audio source
     SLDataLocator_AndroidBufferQueue locBufferQueue = {SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE,2}; //Simple Buffer Queue
@@ -71,20 +80,14 @@ bool AudioSLESRender::initRender(queue<RenderData *> *queue) {
     // create data source
     dataSource = {&locBufferQueue, &dataFormat};
 
-    m_RenderParams = new AudioRenderParams ();
-    m_RenderParams->simpleFormat = AV_SAMPLE_FMT_S16;
-    m_RenderParams->simpleRate = 44100;
-    m_RenderParams->nbSimple = 1024;
-    m_RenderParams->channelLayout = 2;
-
     // set outputMix
     SLDataLocator_OutputMix dataSinkLoc = {SL_DATALOCATOR_OUTPUTMIX,outputMixObj};
     // set output
     dataSink = {&dataSinkLoc, nullptr};
 
-    const SLInterfaceID ids[3] = {SL_IID_BUFFERQUEUE, SL_IID_EFFECTSEND, SL_IID_VOLUME };
-    const SLboolean req[3] = {SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE};
-    result = (*audioEngine)->CreateAudioPlayer(audioEngine,&playerObj,&dataSource,&dataSink,3,ids,req);
+    const SLInterfaceID playerIds[2] = {SL_IID_BUFFERQUEUE, SL_IID_VOLUME };
+    const SLboolean playerReq[2] = {SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE};
+    result = (*audioEngine)->CreateAudioPlayer(audioEngine,&playerObj,&dataSource,&dataSink,2,playerIds,playerReq);
     (void)result;
 
     // realize
@@ -100,13 +103,12 @@ bool AudioSLESRender::initRender(queue<RenderData *> *queue) {
     (void)result;
 
     // get the buffer queue interface
-    result = (*playerObj)->GetInterface(playerObj, SL_IID_BUFFERQUEUE, &audioPlayerBuffQueue);
+    result = (*playerObj)->GetInterface(playerObj, SL_IID_BUFFERQUEUE, &audioBuffQueue);
     (void)result;
 
     // set buffer callback
-    result = (*audioPlayerBuffQueue)->RegisterCallback(audioPlayerBuffQueue,AudioPlayerCallback, this);
+    result = (*audioBuffQueue)->RegisterCallback(audioBuffQueue, AudioPlayerCallback, this);
     (void)result;
-
 
     return true;
 }
@@ -117,14 +119,18 @@ AudioRenderParams *AudioSLESRender::getRenderParams() {
 
 
 bool AudioSLESRender::start() {
+    pthread_mutex_init(&mutex, nullptr);
+
     result = (*audioPlayer)->SetPlayState(audioPlayer,SL_PLAYSTATE_PLAYING);
-    AudioPlayerCallback(audioPlayerBuffQueue, this);
+    AudioPlayerCallback(audioBuffQueue, this);
     return true;
 }
+
 
 bool AudioSLESRender::pause() {
     return false;
 }
+
 
 bool AudioSLESRender::stop() {
     return false;
@@ -132,20 +138,22 @@ bool AudioSLESRender::stop() {
 
 
 void AudioSLESRender::playAudio(){
-    while (true){
+    pthread_mutex_lock(&mutex);
+    while (m_RenderQueue->empty()){
         av_usleep(10);
-        if (!m_RenderQueue->empty()) break;
     }
     auto *renderData = m_RenderQueue->front();
     if (renderData){
-        result = (*audioPlayerBuffQueue)->Enqueue(audioPlayerBuffQueue, renderData->audioData,
-                                                           (SLuint32) renderData->audioDataSize);
+        result = (*audioBuffQueue)->Enqueue(audioBuffQueue, renderData->audioData,
+                                            (SLuint32) renderData->audioDataSize);
         if (result != SL_RESULT_SUCCESS){
             logError(-1,"PLAY ERROR");
         }
-        delete renderData;
         m_RenderQueue->pop();
+        delete [] renderData->audioData;
+        delete renderData;
     }
+    pthread_mutex_unlock(&mutex);
 }
 
 

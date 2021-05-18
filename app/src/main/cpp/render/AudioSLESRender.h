@@ -41,7 +41,9 @@ private:
     SLPlayItf audioPlayer = NULL;
     SLVolumeItf playerVolume = NULL;
 
-    SLAndroidSimpleBufferQueueItf  audioPlayerBuffQueue;
+    SLAndroidSimpleBufferQueueItf  audioBuffQueue;
+
+    pthread_mutex_t mutex;
 };
 
 

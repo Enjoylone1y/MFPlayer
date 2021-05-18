@@ -49,6 +49,7 @@ typedef struct AudioRenderParams {
     AVSampleFormat simpleFormat;
     int nbSimple;
     int simpleRate;
+    int channels;
 } AudioRenderParams;
 
 

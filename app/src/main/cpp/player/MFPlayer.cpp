@@ -10,7 +10,6 @@ bool MFPlayer::init(const char *path, JNIEnv *env, jobject surface) {
     int ret = 0;
 
 
-
     // 打开媒体文件，找到视频流
     m_FormatContext = avformat_alloc_context();
 
@@ -76,9 +75,9 @@ bool MFPlayer::init(const char *path, JNIEnv *env, jobject surface) {
 
 void MFPlayer::play() {
     videoDecoder->start();
-    audioDecoder->start();
-
     windowRender->start();
+
+    audioDecoder->start();
     audioRender->start();
 }
 

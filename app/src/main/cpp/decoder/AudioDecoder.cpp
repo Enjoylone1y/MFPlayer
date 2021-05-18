@@ -82,7 +82,7 @@ bool AudioDecoder::initDecoder(AVFormatContext *fmt_ctx, AudioRenderParams *para
     m_nbSamples = (int) av_rescale_rnd(m_RenderParams->nbSimple, m_RenderParams->simpleRate,
             m_CodecContext->sample_rate,AV_ROUND_UP);
 
-    m_FrameDataSize = av_samples_get_buffer_size(nullptr,m_RenderParams->channelLayout,
+    m_FrameDataSize = av_samples_get_buffer_size(nullptr,m_RenderParams->channels,
             m_nbSamples,m_RenderParams->simpleFormat,1);
 
     m_AudioOutBuffer = (uint8_t *) malloc(m_FrameDataSize);
@@ -136,19 +136,17 @@ int AudioDecoder::loopDecode() {
             continue;
         }
         ret = av_read_frame(m_FormatContext, m_Packet);
-        if (m_Packet->stream_index == m_StreamIndex) {
+        if (ret == 0 && m_Packet->stream_index == m_StreamIndex) {
             ret = avcodec_send_packet(m_CodecContext, m_Packet);
-            while (ret >= 0) {
+            while (ret == 0) {
                 ret = avcodec_receive_frame(m_CodecContext, m_AudioFrame);
-                if (ret < 0) {
-                    logError(ret, "Error on decoding");
-                } else if(ret == AVERROR_EOF || ret == AVERROR(EAGAIN)) {
-                    
-                } else {
-                    LOGI("receive audioFrame format:%d,channel:%ld,nbSimple:%d,simpleRate:%d",
+                if (ret == 0) {
+                    LOGI("receive audioFrame format:%d,channelLayout:%ld,nbSimple:%d,simpleRate:%d",
                          m_AudioFrame->format,m_AudioFrame->channel_layout,m_AudioFrame->nb_samples
                     ,m_AudioFrame->sample_rate);
                     parseFrame();
+                } else if(ret != AVERROR_EOF && ret != AVERROR(EAGAIN)) {
+                    logError(ret, "Error on decoding");
                 }
             }
         }
@@ -160,15 +158,17 @@ int AudioDecoder::loopDecode() {
 
 
 void AudioDecoder::parseFrame() {
-    int ret = swr_convert(m_SwrContext,&m_AudioOutBuffer,m_FrameDataSize / 2,
+    int ret = swr_convert(m_SwrContext,&m_AudioOutBuffer,m_RenderParams->nbSimple,
             (const uint8_t**) m_AudioFrame->data,m_AudioFrame->nb_samples);
     if (ret < 0){
         logError(ret,"swr_convert error");
         return;
     }
+    LOGI("number of samples output per channel: %d",ret);
     auto *renderData = new RenderData ();
     renderData->nbSamples = m_nbSamples;
     renderData->audioDataSize = m_FrameDataSize;
-    renderData->audioData = m_AudioOutBuffer;
+    renderData->audioData = (uint8_t*) malloc(m_FrameDataSize);
+    memcpy(renderData->audioData,m_AudioOutBuffer,m_FrameDataSize);
     m_RenderQueue->push(renderData);
 }
